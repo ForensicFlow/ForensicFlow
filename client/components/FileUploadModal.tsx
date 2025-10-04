@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { casesApi } from '@/lib/api';
+import { casesApi } from '@/lib/api.ts';
 
 interface FileUploadModalProps {
   isOpen: boolean;

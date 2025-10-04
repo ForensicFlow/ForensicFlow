@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi, tokenManager } from '@/lib/api';
+import { authApi, tokenManager } from '@/lib/api.ts';
 
 interface User {
   id: number;

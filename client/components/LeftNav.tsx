@@ -4,9 +4,9 @@ import { AppView, CaseTabView } from '../types';
 import { NAV_ITEMS, CASE_TAB_ITEMS } from '../constants';
 import { ChevronDoubleLeftIcon, ShieldExclamationIcon, UserCircleIcon } from './icons';
 import { ForensicFlowLogo } from './Logo';
-import { useAuth } from '@/contexts/AuthContext';
-import { useDemo } from '@/contexts/DemoContext';
-import { useKeyboardShortcutsHelp } from '@/contexts/KeyboardShortcutsContext';
+import { useAuth } from '@/contexts/AuthContext.tsx';
+import { useDemo } from '@/contexts/DemoContext.tsx';
+import { useKeyboardShortcutsHelp } from '@/contexts/KeyboardShortcutsContext.tsx';
 import { getModKeyDisplay } from '../hooks/useKeyboardShortcuts';
 
 interface LeftNavProps {

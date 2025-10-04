@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@/contexts/ToastContext';
-import { authApi } from '@/lib/api';
+import { useToast } from '@/contexts/ToastContext.tsx';
+import { authApi } from '@/lib/api.ts';
 import Logo from '@/components/Logo';
 
 interface ResetPasswordPageProps {

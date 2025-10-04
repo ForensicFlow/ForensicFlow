@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ResultCard from '../ResultCard';
-import { evidenceApi, casesApi } from '@/lib/api';
+import { evidenceApi, casesApi } from '@/lib/api.ts';
 import { EvidenceSnippet } from '../../types';
 import { 
     CheckBadgeIcon, 
@@ -21,7 +21,7 @@ import { AppView } from '../../types';
 import TopNav from '../TopNav';
 import UserProfileWidget from '../UserProfileWidget';
 import LoadingSkeleton from '../LoadingSkeleton';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
 
 interface LandingPageProps {
   onEnterApp: (view: AppView) => void;

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { evidenceApi } from '@/lib/api';
+import { evidenceApi } from '@/lib/api.ts';
 import { EvidenceSnippet } from '../../types';
 import { DocumentTextIcon, PhotographIcon, TerminalIcon, ClockIcon } from '../icons';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
 
 interface TimelineViewProps {
   caseId: string;

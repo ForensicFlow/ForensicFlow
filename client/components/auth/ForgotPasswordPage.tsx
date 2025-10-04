@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '@/contexts/ToastContext';
-import { authApi } from '@/lib/api';
+import { authApi } from '@/lib/api.ts';
 import Logo from '@/components/Logo';
 
 interface ForgotPasswordPageProps {

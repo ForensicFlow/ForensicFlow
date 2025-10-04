@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { aiApi, evidenceApi, reportItemsApi, chatSessionsApi } from '@/lib/api';
+import { aiApi, evidenceApi, reportItemsApi, chatSessionsApi } from '@/lib/api.ts';
 import { EvidenceSnippet, ChatSession, ChatMessage as ChatMessageType } from '../types';
 import {
   PaperAirplaneIcon,
@@ -11,8 +11,8 @@ import {
   CogIcon,
   ExclamationTriangleIcon
 } from './icons';
-import { useDemo } from '@/contexts/DemoContext';
-import { useToast } from '@/contexts/ToastContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
+import { useToast } from '@/contexts/ToastContext.tsx';
 import MiniTimeline from './MiniTimeline';
 import ChatBubbleView from './ChatBubbleView';
 import MiniMap from './MiniMap';

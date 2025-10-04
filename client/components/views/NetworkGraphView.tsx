@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { evidenceApi } from '@/lib/api';
+import { evidenceApi } from '@/lib/api.ts';
 import { EvidenceSnippet } from '../../types';
 import { UserCircleIcon, LocationMarkerIcon, DeviceMobileIcon, ShieldCheckIcon, CubeTransparentIcon } from '../icons';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
 
 type NodeType = 'Person' | 'Location' | 'Crypto' | 'Device';
 interface Node {

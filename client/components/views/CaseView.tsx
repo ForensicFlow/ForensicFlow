@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { casesApi } from '@/lib/api';
+import { casesApi } from '@/lib/api.ts';
 import { Case } from '../../types';
 import CaseCard from '../CaseCard';
 import CreateCaseModal from '../CreateCaseModal';
 import LockedFeatureBanner from '../LockedFeatureBanner';
 import { PlusIcon } from '../icons';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Helper function to safely convert values to numbers

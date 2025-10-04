@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { auditApi } from '@/lib/api';
+import { auditApi } from '@/lib/api.ts';
 import { AuditLogEntry } from '../../types';
 import { SearchIcon, DocumentReportIcon, UserCircleIcon, CogIcon } from '../icons';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext.tsx';
 
 const getIconForAction = (action: string) => {
     if (action.includes('USER')) return <UserCircleIcon className="h-5 w-5" />;

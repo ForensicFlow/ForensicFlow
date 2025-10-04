@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext.tsx';
+import { useToast } from '@/contexts/ToastContext.tsx';
 import Logo from '@/components/Logo';
 
 interface RegisterPageProps {
