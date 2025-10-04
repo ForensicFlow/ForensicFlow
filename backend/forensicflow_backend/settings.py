@@ -184,10 +184,11 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     # Production: Allow specific origins
-    CORS_ALLOWED_ORIGINS = os.getenv(
+    cors_origins = os.getenv(
         'CORS_ALLOWED_ORIGINS',
-        'http://localhost:5173,http://localhost:3000'
-    ).split(',')
+        'https://forensicflow.vercel.app,http://localhost:5173,http://localhost:3000'
+    )
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',')]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -203,10 +204,11 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF Settings - Add trusted origins for frontend
-CSRF_TRUSTED_ORIGINS = os.getenv(
+csrf_origins = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000'
-).split(',')
+    'https://forensicflow.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000'
+)
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',')]
 
 # Security settings for production
 if not DEBUG:
