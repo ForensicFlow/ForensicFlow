@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "extraction_tool": "Cellebrite UFED",
+    "extraction_date": "2025-03-15T10:00:00Z",
+    "device_model": "iPhone 14 Pro",
+    "device_imei": "356938035643809",
+    "case_number": "FIR-2025-001"
+  },
+  "messages": [
+    {
+      "text": "Transfer 0.15 BTC from 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy to the new hardware wallet. I'll send the address separately.",
+      "sender": "+91 9876543210",
+      "receiver": "+91 9876543211",
+      "timestamp": "2025-03-12T14:32:10Z",
+      "app": "WhatsApp",
+      "direction": "outgoing",
+      "message_id": "msg_wa_001"
+    },
+    {
+      "text": "The package is secure. Meet at the usual spot, Pier 4. Don't be late. Use the code word 'Zephyr'.",
+      "sender": "+1 555-0123",
+      "receiver": "+91 9876543210",
+      "timestamp": "2025-03-13T09:15:44Z",
+      "app": "Signal",
+      "direction": "incoming",
+      "message_id": "msg_sig_002"
+    },
+    {
+      "text": "Received payment of $50,000 USD. Will proceed with the delivery as discussed.",
+      "sender": "+91 9876543210",
+      "receiver": "+44 7700 900123",
+      "timestamp": "2025-03-14T16:20:00Z",
+      "app": "WhatsApp",
+      "direction": "outgoing",
+      "message_id": "msg_wa_003"
+    },
+    {
+      "text": "Contact has been established with the buyer. Email sent to crypto.dealer@darknet.onion",
+      "sender": "+91 9876543210",
+      "receiver": "+91 9876543212",
+      "timestamp": "2025-03-14T18:45:00Z",
+      "app": "Telegram",
+      "direction": "outgoing",
+      "message_id": "msg_tg_004"
+    },
+    {
+      "text": "Meeting confirmed for tomorrow at 2 PM. Location: 28.6139° N, 77.2090° E (New Delhi coordinates)",
+      "sender": "+91 9876543212",
+      "receiver": "+91 9876543210",
+      "timestamp": "2025-03-15T11:30:00Z",
+      "app": "WhatsApp",
+      "direction": "incoming",
+      "message_id": "msg_wa_005"
+    },
+    {
+      "text": "Check this wallet: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh - has 2.5 BTC",
+      "sender": "+1 555-0124",
+      "receiver": "+91 9876543210",
+      "timestamp": "2025-03-15T22:15:00Z",
+      "app": "Signal",
+      "direction": "incoming",
+      "message_id": "msg_sig_006"
+    }
+  ],
+  "calls": [
+    {
+      "number": "+1 555-0123",
+      "timestamp": "2025-03-12T18:00:00Z",
+      "duration": 180,
+      "type": "incoming",
+      "call_id": "call_001"
+    },
+    {
+      "number": "+44 7700 900123",
+      "timestamp": "2025-03-13T10:30:00Z",
+      "duration": 420,
+      "type": "outgoing",
+      "call_id": "call_002"
+    },
+    {
+      "number": "+91 9876543212",
+      "timestamp": "2025-03-14T09:15:00Z",
+      "duration": 300,
+      "type": "incoming",
+      "call_id": "call_003"
+    },
+    {
+      "number": "+1 555-0123",
+      "timestamp": "2025-03-15T02:30:00Z",
+      "duration": 540,
+      "type": "outgoing",
+      "call_id": "call_004"
+    },
+    {
+      "number": "+1 555-0124",
+      "timestamp": "2025-03-15T23:45:00Z",
+      "duration": 120,
+      "type": "incoming",
+      "call_id": "call_005"
+    }
+  ],
+  "contacts": [
+    {
+      "name": "The Fixer",
+      "phone": "+1 555-0123",
+      "email": "fixer@protonmail.com",
+      "contact_id": "cnt_001"
+    },
+    {
+      "name": "Dealer X",
+      "phone": "+44 7700 900123",
+      "contact_id": "cnt_002"
+    },
+    {
+      "name": "Agent Z",
+      "phone": "+91 9876543212",
+      "email": "agent.z@secure.net",
+      "contact_id": "cnt_003"
+    },
+    {
+      "name": "Crypto King",
+      "phone": "+1 555-0124",
+      "contact_id": "cnt_004"
+    }
+  ],
+  "locations": [
+    {
+      "lat": 28.6139,
+      "lon": 77.2090,
+      "timestamp": "2025-03-12T14:30:00Z",
+      "address": "Connaught Place, New Delhi, India",
+      "accuracy": 10,
+      "source": "GPS",
+      "location_id": "loc_001"
+    },
+    {
+      "lat": 40.7128,
+      "lon": -74.0060,
+      "timestamp": "2025-03-13T09:00:00Z",
+      "address": "New York Harbor, NY, USA",
+      "accuracy": 50,
+      "source": "Cell Tower",
+      "location_id": "loc_002"
+    },
+    {
+      "lat": 51.5074,
+      "lon": -0.1278,
+      "timestamp": "2025-03-14T15:00:00Z",
+      "address": "London, UK",
+      "accuracy": 100,
+      "source": "WiFi",
+      "location_id": "loc_003"
+    },
+    {
+      "lat": 19.0760,
+      "lon": 72.8777,
+      "timestamp": "2025-03-15T20:00:00Z",
+      "address": "Gateway of India, Mumbai, India",
+      "accuracy": 15,
+      "source": "GPS",
+      "location_id": "loc_004"
+    }
+  ],
+  "files": [
+    {
+      "name": "IMG_20250312_184501.jpg",
+      "path": "/DCIM/Camera/IMG_20250312_184501.jpg",
+      "size": 3145728,
+      "modified": "2025-03-12T18:45:01Z",
+      "created": "2025-03-12T18:45:01Z",
+      "hash": "f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9",
+      "mime_type": "image/jpeg",
+      "description": "Image containing GPS EXIF data and a partial view of a shipping manifest",
+      "exif": {
+        "gps": {
+          "lat": 40.7128,
+          "lon": -74.0060
+        },
+        "camera": "iPhone 14 Pro",
+        "timestamp": "2025-03-12T18:45:01Z"
+      },
+      "file_id": "file_001"
+    },
+    {
+      "name": "transaction_details.pdf",
+      "path": "/Downloads/transaction_details.pdf",
+      "size": 524288,
+      "modified": "2025-03-14T10:00:00Z",
+      "created": "2025-03-14T10:00:00Z",
+      "hash": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      "mime_type": "application/pdf",
+      "description": "PDF document with cryptocurrency transaction details",
+      "file_id": "file_002"
+    },
+    {
+      "name": "wallet_backup.dat",
+      "path": "/Documents/wallet_backup.dat",
+      "size": 102400,
+      "modified": "2025-03-15T08:00:00Z",
+      "created": "2025-03-10T12:00:00Z",
+      "hash": "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e",
+      "mime_type": "application/octet-stream",
+      "description": "Cryptocurrency wallet backup file",
+      "file_id": "file_003"
+    },
+    {
+      "name": "shipping_manifest.jpg",
+      "path": "/Pictures/shipping_manifest.jpg",
+      "size": 2097152,
+      "modified": "2025-03-13T11:30:00Z",
+      "created": "2025-03-13T11:30:00Z",
+      "hash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+      "mime_type": "image/jpeg",
+      "description": "Photo of shipping manifest with container numbers",
+      "file_id": "file_004"
+    }
+  ],
+  "browser_history": [
+    {
+      "url": "https://www.blockchain.com/btc/address/3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+      "title": "Bitcoin Address - Blockchain Explorer",
+      "timestamp": "2025-03-12T13:00:00Z",
+      "visit_count": 5,
+      "browser": "Safari"
+    },
+    {
+      "url": "https://localbitcoins.com/buy-bitcoins",
+      "title": "Buy Bitcoin Locally",
+      "timestamp": "2025-03-13T16:00:00Z",
+      "visit_count": 3,
+      "browser": "Safari"
+    },
+    {
+      "url": "https://protonmail.com",
+      "title": "ProtonMail - Secure Email",
+      "timestamp": "2025-03-14T09:00:00Z",
+      "visit_count": 8,
+      "browser": "Safari"
+    },
+    {
+      "url": "https://www.google.com/maps/@40.7128,-74.0060,15z",
+      "title": "Google Maps - New York Harbor",
+      "timestamp": "2025-03-13T08:00:00Z",
+      "visit_count": 2,
+      "browser": "Safari"
+    }
+  ],
+  "installed_apps": [
+    {
+      "name": "Signal",
+      "package": "org.whispersystems.signal",
+      "version": "6.15.0",
+      "install_date": "2024-12-01T00:00:00Z"
+    },
+    {
+      "name": "WhatsApp",
+      "package": "net.whatsapp.WhatsApp",
+      "version": "23.5.75",
+      "install_date": "2024-01-15T00:00:00Z"
+    },
+    {
+      "name": "Telegram",
+      "package": "org.telegram.messenger",
+      "version": "9.5.2",
+      "install_date": "2024-11-20T00:00:00Z"
+    },
+    {
+      "name": "Coinbase Wallet",
+      "package": "org.toshi",
+      "version": "34.2.0",
+      "install_date": "2025-02-10T00:00:00Z"
+    },
+    {
+      "name": "Tor Browser",
+      "package": "org.torproject.torbrowser",
+      "version": "12.0.3",
+      "install_date": "2025-03-01T00:00:00Z"
+    }
+  ],
+  "accounts": [
+    {
+      "type": "email",
+      "address": "suspect@protonmail.com",
+      "provider": "ProtonMail"
+    },
+    {
+      "type": "email",
+      "address": "crypto.dealer@darknet.onion",
+      "provider": "Tor Mail"
+    },
+    {
+      "type": "crypto",
+      "address": "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+      "currency": "BTC"
+    },
+    {
+      "type": "crypto",
+      "address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+      "currency": "BTC"
+    }
+  ]
+}
+

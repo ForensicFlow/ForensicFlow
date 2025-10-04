@@ -1,0 +1,113 @@
+services:
+  # Django Backend API
+  - type: web
+    name: forensicflow-backend
+    runtime: python
+    plan: free  # Change to 'starter' or higher for production
+    buildCommand: chmod +x backend/build.sh && backend/build.sh
+    startCommand: cd backend && gunicorn forensicflow_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        sync: false  # Set in Render dashboard (your-backend-url.onrender.com)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forensicflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: forensicflow-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: OPENAI_API_KEY
+        sync: false  # Set in Render dashboard (optional)
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USE_TLS
+        value: True
+      - key: EMAIL_HOST_USER
+        sync: false  # Set in Render dashboard
+      - key: EMAIL_HOST_PASSWORD
+        sync: false  # Set in Render dashboard
+      - key: DEFAULT_FROM_EMAIL
+        sync: false  # Set in Render dashboard (optional)
+      - key: SERVER_EMAIL
+        sync: false  # Set in Render dashboard (optional)
+      - key: FRONTEND_URL
+        sync: false  # Set to your Render frontend URL (https://your-app.onrender.com)
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Set to your frontend URL (https://your-app.onrender.com)
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false  # Set to your frontend URL (https://your-app.onrender.com)
+      - key: MAX_UPLOAD_SIZE
+        value: 500000000
+      - key: SECURE_SSL_REDIRECT
+        value: true
+
+  # Redis for Celery
+  - type: redis
+    name: forensicflow-redis
+    plan: free  # Change for production
+    ipAllowList: []  # Allow all by default
+
+  # Celery Worker (Background Tasks)
+  - type: worker
+    name: forensicflow-celery
+    runtime: python
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && celery -A forensicflow_backend worker -l info --pool=solo
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        fromService:
+          name: forensicflow-backend
+          type: web
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forensicflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: forensicflow-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEBUG
+        value: false
+
+  # React Frontend
+  - type: web
+    name: forensicflow-frontend
+    runtime: node
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: VITE_API_URL
+        sync: false  # Set to your backend URL (https://your-backend.onrender.com/api)
+      - key: VITE_GEMINI_API_KEY
+        sync: false  # Optional
+
+databases:
+  - name: forensicflow-db
+    plan: free  # Change for production
+    databaseName: forensicflow
+    user: forensicflow
+
