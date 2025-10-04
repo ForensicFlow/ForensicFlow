@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useToast, Toast } from '../contexts/ToastContext';
+import { useToast, Toast } from '@/contexts/ToastContext';
 
 const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
   const [isExiting, setIsExiting] = useState(false);

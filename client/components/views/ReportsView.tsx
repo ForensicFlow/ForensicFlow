@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { reportsApi, reportItemsApi } from '../../lib/api';
+import { reportsApi, reportItemsApi } from '@/lib/api';
 import { Report } from '../../types';
 import { PlusIcon, EyeIcon, DocumentDownloadIcon, PencilIcon, TrashIcon } from '../icons';
-import { useDemo } from '../../contexts/DemoContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useDemo } from '@/contexts/DemoContext';
+import { useToast } from '@/contexts/ToastContext';
 import MarkdownRenderer from '../MarkdownRenderer';
 
 interface ReportsViewProps {

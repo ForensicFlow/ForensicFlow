@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useToast } from '../../contexts/ToastContext';
-import { authApi } from '../../lib/api';
-import Logo from '../Logo';
+import { useToast } from '@/contexts/ToastContext';
+import { authApi } from '@/lib/api';
+import Logo from '@/components/Logo';
 
 interface ForgotPasswordPageProps {
   onBackToLogin: () => void;

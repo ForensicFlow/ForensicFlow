@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import Logo from '../Logo';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
+import Logo from '@/components/Logo';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;

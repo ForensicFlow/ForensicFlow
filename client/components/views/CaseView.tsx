@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { casesApi } from '../../lib/api';
+import { casesApi } from '@/lib/api';
 import { Case } from '../../types';
 import CaseCard from '../CaseCard';
 import CreateCaseModal from '../CreateCaseModal';
 import LockedFeatureBanner from '../LockedFeatureBanner';
 import { PlusIcon } from '../icons';
-import { useDemo } from '../../contexts/DemoContext';
-import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useDemo } from '@/contexts/DemoContext';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Helper function to safely convert values to numbers
 const safeNumber = (value: any, fallback: number = 0): number => {

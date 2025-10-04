@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { authApi } from '../../lib/api';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { authApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import LoadingSkeleton from '../LoadingSkeleton';
 
 interface User {

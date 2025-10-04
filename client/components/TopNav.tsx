@@ -2,7 +2,7 @@
 import React from 'react';
 import { AppView } from '../types';
 import { NAV_ITEMS } from '../constants';
-import { useDemo } from '../contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext';
 
 interface TopNavProps {
   activeView: AppView;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { casesApi } from '../lib/api';
-import { useToast } from '../contexts/ToastContext';
+import { casesApi } from '@/lib/api';
+import { useToast } from '@/contexts/ToastContext';
 
 interface CaseStatusManagerProps {
   caseId: string;

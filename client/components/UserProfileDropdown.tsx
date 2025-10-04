@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDemo } from '../contexts/DemoContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { CogIcon, LogoutIcon } from './icons';
 
 interface UserProfileDropdownProps {

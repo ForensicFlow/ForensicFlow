@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { casesApi } from '../../lib/api';
+import { casesApi } from '@/lib/api';
 import FileUploadModal from '../FileUploadModal';
 import CaseStatusManager from '../CaseStatusManager';
 import { EvidenceSnippet, CaseTabView } from '../../types';
@@ -9,9 +9,9 @@ import NetworkGraphView from './NetworkGraphView';
 import ReportsView from './ReportsView';
 import AuditLogView from './AuditLogView';
 import FlowBot from '../FlowBot';
-import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { useToast } from '../../contexts/ToastContext';
-import { useDemo } from '../../contexts/DemoContext';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useToast } from '@/contexts/ToastContext';
+import { useDemo } from '@/contexts/DemoContext';
 
 interface CaseDetailViewProps {
   caseId: string;

@@ -5,9 +5,9 @@ import ResultCard from '../ResultCard';
 import RightContextPane from '../RightContextPane';
 import { FilterIcon } from '../icons';
 import AISummaryCard from '../AISummaryCard';
-import { aiApi, evidenceApi } from '../../lib/api';
+import { aiApi, evidenceApi } from '@/lib/api';
 import FilterSidebar, { Filters } from '../FilterSidebar';
-import { useDemo } from '../../contexts/DemoContext';
+import { useDemo } from '@/contexts/DemoContext';
 
 // Simple debounce hook
 const useDebounce = (value: string, delay: number) => {
