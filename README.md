@@ -13,7 +13,7 @@
 
 *Reducing forensic analysis time from days to hours with AI-powered natural language queries*
 
-**🔗 [View Repository](https://github.com/ForensicFlow/ForensicFlow) • 🚀 [Deploy on Render](https://render.com)**
+**🔗 [View Repository](https://github.com/ForensicFlow/ForensicFlow) • 🚀 [Live Demo](https://forensicflow.onrender.com/) • 📖 [API Docs](https://forensicflow.onrender.com/api/)**
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
@@ -426,18 +426,19 @@ npm run build
 
 Deploy the `dist/` folder to your web server or CDN.
 
-### 🚀 Deploy to Render
+### 🚀 Deployment
 
-ForensicFlow is ready for one-click deployment to Render:
+**Backend (Render):** ✅ **LIVE** at [https://forensicflow.onrender.com/](https://forensicflow.onrender.com/)
 
-1. Push your code to GitHub
-2. Go to [Render Dashboard](https://dashboard.render.com)
-3. Click "New" → "Blueprint"
-4. Connect: `https://github.com/ForensicFlow/ForensicFlow.git`
-5. Configure environment variables (see deployment guides)
-6. Deploy!
+**Frontend (Vercel):**
+1. Import GitHub repository to Vercel
+2. Set **Root Directory** to `client`
+3. Add environment variables:
+   - `VITE_API_URL=https://forensicflow.onrender.com/api`
+   - `VITE_GEMINI_API_KEY=<your-key>`
+4. Deploy!
 
-See `READY_FOR_GITHUB.md` and `GITHUB_PUSH_GUIDE.md` for detailed instructions.
+See `VERCEL_DEPLOYMENT.md` for detailed instructions.
 
 ---
 
