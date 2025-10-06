@@ -4,7 +4,7 @@ services:
     name: forensicflow-backend
     runtime: python
     plan: free  # Change to 'starter' or higher for production
-    buildCommand: chmod +x backend/build.sh && backend/build.sh
+    buildCommand: chmod +x build.sh && ./build.sh
     startCommand: cd backend && gunicorn forensicflow_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
