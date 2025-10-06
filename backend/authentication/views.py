@@ -26,6 +26,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
+import threading
 
 
 def get_client_ip(request):
@@ -41,6 +42,38 @@ def get_client_ip(request):
 def get_user_agent(request):
     """Get user agent from request"""
     return request.META.get('HTTP_USER_AGENT', '')
+
+
+def send_email_async(subject, message, from_email, recipient_list):
+    """
+    Send email in a background thread to avoid blocking the request.
+    Includes timeout to prevent hanging on slow SMTP connections.
+    """
+    def _send_with_timeout():
+        try:
+            import socket
+            # Set a socket timeout for SMTP connections (30 seconds)
+            default_timeout = socket.getdefaulttimeout()
+            socket.setdefaulttimeout(30)
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=from_email,
+                recipient_list=recipient_list,
+                fail_silently=True,
+            )
+            print(f"✅ Email sent successfully to {recipient_list}")
+            
+            # Restore default timeout
+            socket.setdefaulttimeout(default_timeout)
+        except Exception as e:
+            print(f"⚠️ Failed to send email: {e}")
+    
+    # Start email sending in background thread
+    email_thread = threading.Thread(target=_send_with_timeout, daemon=True)
+    email_thread.start()
+    print(f"📧 Email queued for {recipient_list}")
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -63,11 +96,10 @@ class UserRegistrationView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Send welcome email
-        try:
-            send_mail(
-                subject='Welcome to ForensicFlow - Account Registration Received',
-                message=f'''
+        # Send welcome email asynchronously (non-blocking)
+        send_email_async(
+            subject='Welcome to ForensicFlow - Account Registration Received',
+            message=f'''
 Hello {user.first_name} {user.last_name},
 
 Thank you for registering with ForensicFlow!
@@ -85,14 +117,10 @@ If you have any questions, please contact your system administrator.
 
 Best regards,
 ForensicFlow Team
-                ''',
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
-            print(f"Welcome email sent to {user.email}")
-        except Exception as e:
-            print(f"Failed to send welcome email: {e}")
+            ''',
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
+            recipient_list=[user.email],
+        )
         
         return Response({
             'message': 'Registration successful. Your account is pending approval by an administrator.',
@@ -287,11 +315,10 @@ class UserManagementViewSet(viewsets.ModelViewSet):
         user.is_approved = True
         user.save()
         
-        # Send approval email
-        try:
-            send_mail(
-                subject='ForensicFlow - Account Approved',
-                message=f'''
+        # Send approval email asynchronously
+        send_email_async(
+            subject='ForensicFlow - Account Approved',
+            message=f'''
 Hello {user.first_name},
 
 Great news! Your ForensicFlow account has been approved.
@@ -305,13 +332,10 @@ Role: {user.get_role_display()}
 
 Best regards,
 ForensicFlow Team
-                ''',
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
-        except Exception as e:
-            print(f"Failed to send approval email: {e}")
+            ''',
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
+            recipient_list=[user.email],
+        )
         
         return Response({
             'message': f'User {user.username} approved successfully',
@@ -394,10 +418,9 @@ ForensicFlow Team
         
         # Send approval emails
         for user in users:
-            try:
-                send_mail(
-                    subject='ForensicFlow - Account Approved',
-                    message=f'''
+            send_email_async(
+                subject='ForensicFlow - Account Approved',
+                message=f'''
 Hello {user.first_name},
 
 Your ForensicFlow account has been approved! You can now login and access the system.
@@ -409,13 +432,10 @@ Login at: {getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')}/
 
 Best regards,
 ForensicFlow Team
-                    ''',
-                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
-                    recipient_list=[user.email],
-                    fail_silently=True,
-                )
-            except Exception as e:
-                print(f"Failed to send approval email to {user.email}: {e}")
+                ''',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
+                recipient_list=[user.email],
+            )
         
         return Response({
             'message': f'Successfully approved {updated_count} users',
@@ -529,11 +549,10 @@ class PasswordResetRequestView(generics.GenericAPIView):
             frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
             reset_link = f"{frontend_url}/reset-password?uid={uid}&token={token}"
             
-            # Send email
-            try:
-                send_mail(
-                    subject='ForensicFlow - Password Reset Request',
-                    message=f'''
+            # Send email asynchronously
+            send_email_async(
+                subject='ForensicFlow - Password Reset Request',
+                message=f'''
 Hello {user.first_name},
 
 You requested a password reset for your ForensicFlow account.
@@ -547,16 +566,12 @@ If you didn't request this, please ignore this email.
 
 Best regards,
 ForensicFlow Team
-                    ''',
-                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
-                    recipient_list=[email],
-                    fail_silently=False,
-                )
-                print(f"Password reset email sent to {email}")
-                print(f"Reset link: {reset_link}")
-            except Exception as e:
-                print(f"Failed to send email: {e}")
-                print(f"Reset link: {reset_link}")
+                ''',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@forensicflow.local'),
+                recipient_list=[email],
+            )
+            print(f"Password reset email queued for {email}")
+            print(f"Reset link: {reset_link}")
             
         except User.DoesNotExist:
             # Don't reveal that the user doesn't exist
