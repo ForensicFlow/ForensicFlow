@@ -4,8 +4,13 @@ set -o errexit
 
 echo "Starting ForensicFlow build process..."
 
-# Navigate to backend directory
-cd backend
+# Navigate to backend directory (if not already there)
+if [ -d "backend" ]; then
+    cd backend
+    echo "Changed to backend directory"
+else
+    echo "Already in backend directory or backend not found"
+fi
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
