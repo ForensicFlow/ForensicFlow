@@ -5,7 +5,7 @@ services:
     runtime: python
     plan: free  # Change to 'starter' or higher for production
     buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: cd backend && python manage.py migrate --no-input && python manage.py collectstatic --no-input && gunicorn forensicflow_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    startCommand: cd backend && python manage.py migrate --no-input && python manage.py collectstatic --no-input && python manage.py create_admin && gunicorn forensicflow_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
