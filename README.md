@@ -72,20 +72,22 @@ ForensicFlow provides:
 - **Audit Logging**: Complete activity tracking for compliance
 
 ---
-
-## 🚀 Quick Start
-
-### Prerequisites
+### 📋 Prerequisites
 
 **Backend:**
 - Python 3.10 or higher
 - PostgreSQL 12+ (or SQLite for development)
-- Redis (for background tasks)
+- Redis (optional - for background tasks)
 
 **Frontend:**
 - Node.js 18+ and npm
 
-### Installation
+**API Keys:**
+- Gemini API Key (required) - Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+---
+
+### 🔧 Manual Installation
 
 #### 1️⃣ Clone the Repository
 
@@ -94,7 +96,22 @@ git clone https://github.com/ForensicFlow/ForensicFlow.git
 cd ForensicFlow
 ```
 
-#### 2️⃣ Backend Setup
+#### 2️⃣ Environment Configuration
+
+**Backend** - Create `backend/.env`:
+```bash
+cd backend
+cp env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
+
+**Frontend** - Create `client/.env`:
+```bash
+cd ../client
+echo "VITE_API_URL=http://localhost:8000/api" > .env
+# Add VITE_GEMINI_API_KEY if needed
+```
+#### 3️⃣ Backend Setup
 
 ```bash
 # Navigate to backend directory
@@ -112,10 +129,6 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy and configure environment variables
-# Rename env.example to .env and update with your settings
-cp env.example .env
-
 # Run database migrations
 python manage.py migrate
 
@@ -126,33 +139,23 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-**Optional: Start Celery worker (for async tasks)**
-```bash
-# In a new terminal
-celery -A forensicflow_backend worker -l info
-```
-
-#### 3️⃣ Frontend Setup
+#### 4️⃣ Frontend Setup
 
 ```bash
-# Navigate to client directory
-cd ../client
+# In a NEW terminal, navigate to client directory
+cd client
 
 # Install dependencies
 npm install
-
-# Copy and configure environment variables
-# Rename env.example to .env and update with your settings
-cp env.example .env
 
 # Start development server
 npm run dev
 ```
 
-#### 4️⃣ Access the Application
+#### 5️⃣ Access the Application
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
+- **Backend API**: http://localhost:8000/api
 - **Admin Panel**: http://localhost:8000/admin
 
 ---

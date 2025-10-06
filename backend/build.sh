@@ -20,13 +20,18 @@ pip install -r requirements.txt
 echo "Collecting static files..."
 python manage.py collectstatic --no-input
 
-# Run database migrations
-echo "Running database migrations..."
-python manage.py migrate --no-input
-
-# Create superuser if it doesn't exist
-echo "Creating superuser..."
-python manage.py shell -c "
+# Run setup command (migrations + superuser)
+echo "Setting up database and superuser..."
+python manage.py setup_render || {
+    echo "⚠️ Setup command failed, trying manual setup..."
+    
+    # Fallback: Run migrations manually
+    echo "Running database migrations..."
+    python manage.py migrate --no-input
+    
+    # Fallback: Create superuser manually
+    echo "Creating superuser..."
+    python manage.py shell -c "
 import os
 import sys
 from django.contrib.auth import get_user_model
@@ -89,6 +94,7 @@ else:
     except Exception as e:
         print(f'Warning: Could not update superuser: {e}')
 "
+}
 
 echo "Build completed successfully!"
 
