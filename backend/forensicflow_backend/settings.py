@@ -188,7 +188,18 @@ else:
         'CORS_ALLOWED_ORIGINS',
         'https://forensicflow.vercel.app,http://localhost:5173,http://localhost:3000'
     )
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',')]
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+
+# Always allow these origins in addition to DEBUG behavior
+if not DEBUG:
+    # Add common Vercel deployment patterns
+    additional_origins = [
+        'https://forensicflow.vercel.app',
+        'https://forensicflow-*.vercel.app',  # Preview deployments
+    ]
+    for origin in additional_origins:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -206,9 +217,18 @@ CORS_ALLOW_HEADERS = [
 # CSRF Settings - Add trusted origins for frontend
 csrf_origins = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'https://forensicflow.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000'
+    'https://forensicflow.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,https://forensicflow.onrender.com'
 )
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',')]
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
+
+# Always include backend URL in CSRF trusted origins
+if not DEBUG:
+    backend_hosts = ALLOWED_HOSTS
+    for host in backend_hosts:
+        if host and host not in ['localhost', '127.0.0.1']:
+            https_origin = f'https://{host}'
+            if https_origin not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(https_origin)
 
 # Security settings for production
 if not DEBUG:
