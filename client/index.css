@@ -21,12 +21,34 @@
   }
 }
 
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+  }
+}
+
+@keyframes scanLine {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.6s ease-out;
 }
 
 .animate-fade-in-up {
   animation: fadeInUp 0.8s ease-out;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
 }
 
 /* Custom styles */
@@ -46,21 +68,24 @@ body {
 
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(6, 182, 212, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.5);
-  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.6), rgba(37, 99, 235, 0.6));
+  border-radius: 5px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.7);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.8), rgba(37, 99, 235, 0.8));
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
 }
 
 /* Custom scrollbar for evidence sidebar */

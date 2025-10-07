@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AppShell from './components/AppShell';
 import LiquidBackground from './components/LiquidBackground';
+import CircuitBackground from './components/CircuitBackground';
 import LandingPage from './components/views/LandingPage';
 import PublicLandingPage from './components/views/PublicLandingPage';
 import LoginPage from './components/auth/LoginPage';
@@ -136,7 +137,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated && showPublicLanding && !isDemoMode) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden">
-        <LiquidBackground />
+        <CircuitBackground />
         <div className="relative z-10">
           <PublicLandingPage 
             onTryDemo={handleTryDemo}
