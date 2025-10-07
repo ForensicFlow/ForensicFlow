@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" fill="#000000" rx="15"/>
+  
+  <!-- Glowing background effect -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:0" />
+    </radialGradient>
+    
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22D3EE" />
+      <stop offset="100%" style="stop-color:#3B82F6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Glow effect -->
+  <circle cx="50" cy="50" r="45" fill="url(#glow)"/>
+  
+  <!-- Shield outline -->
+  <path d="M50 15 L70 25 L70 45 Q70 65 50 80 Q30 65 30 45 L30 25 Z" 
+        fill="none" 
+        stroke="url(#shieldGrad)" 
+        stroke-width="3"/>
+  
+  <!-- Circuit pattern inside shield -->
+  <g stroke="#06B6D4" stroke-width="1.5" fill="none">
+    <!-- Horizontal lines -->
+    <line x1="40" y1="35" x2="48" y2="35"/>
+    <line x1="52" y1="35" x2="60" y2="35"/>
+    <line x1="40" y1="50" x2="45" y2="50"/>
+    <line x1="55" y1="50" x2="60" y2="50"/>
+    <line x1="40" y1="65" x2="48" y2="65"/>
+    <line x1="52" y1="65" x2="60" y2="65"/>
+    
+    <!-- Vertical lines -->
+    <line x1="48" y1="30" x2="48" y2="38"/>
+    <line x1="52" y1="30" x2="52" y2="38"/>
+    <line x1="50" y1="45" x2="50" y2="55"/>
+    <line x1="45" y1="47" x2="45" y2="53"/>
+    <line x1="55" y1="47" x2="55" y2="53"/>
+  </g>
+  
+  <!-- Circuit nodes (connection points) -->
+  <g fill="#22D3EE">
+    <circle cx="48" cy="35" r="2"/>
+    <circle cx="52" cy="35" r="2"/>
+    <circle cx="45" cy="50" r="2"/>
+    <circle cx="50" cy="50" r="2.5"/>
+    <circle cx="55" cy="50" r="2"/>
+    <circle cx="48" cy="65" r="2"/>
+    <circle cx="52" cy="65" r="2"/>
+  </g>
+  
+  <!-- Center glowing core -->
+  <circle cx="50" cy="50" r="3" fill="#06B6D4" opacity="0.8">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Scan line effect -->
+  <rect x="30" y="40" width="40" height="1" fill="#06B6D4" opacity="0.3">
+    <animate attributeName="y" values="25;75;25" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0.5;0" dur="3s" repeatCount="indefinite"/>
+  </rect>
+</svg>
