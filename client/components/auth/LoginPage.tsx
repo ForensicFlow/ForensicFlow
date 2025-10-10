@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import Logo from '@/components/Logo';
 
-interface LoginPageProps {
-  onSwitchToRegister: () => void;
-  onForgotPassword?: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassword }) => {
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { success, error: showError } = useToast();
   const [username, setUsername] = useState('');
@@ -101,20 +98,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
             </button>
 
             <div className="text-center mt-4 space-y-2">
-              {onForgotPassword && (
-                <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-slate-400 hover:text-white text-sm transition block w-full"
-                >
-                  Forgot your password?
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-slate-400 hover:text-white text-sm transition block w-full"
+              >
+                Forgot your password?
+              </button>
               <p className="text-slate-300 text-sm">
                 Don't have an account?{' '}
                 <button
                   type="button"
-                  onClick={onSwitchToRegister}
+                  onClick={() => navigate('/register')}
                   className="text-blue-400 hover:text-blue-300 font-semibold transition"
                 >
                   Register here

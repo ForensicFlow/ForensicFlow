@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import LeftNav from './LeftNav';
 import TopBar from './TopBar';
 import SearchView from './views/SearchView';
@@ -10,13 +11,27 @@ import { AppView, EvidenceSnippet, CaseTabView } from '../types';
 import SearchBar from './SearchBar';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
-interface AppShellProps {
-  activeView: AppView;
-  setActiveView: (view: AppView) => void;
-  onGoHome: () => void;
-}
+// Map URL paths to AppView enum
+const pathToView: Record<string, AppView> = {
+  '/app/search': AppView.SEARCH,
+  '/app/cases': AppView.CASES,
+  '/app/settings': AppView.SETTINGS,
+  '/app/users': AppView.USER_MANAGEMENT,
+};
 
-const AppShell: React.FC<AppShellProps> = ({ activeView, setActiveView, onGoHome }) => {
+// Map AppView enum to URL paths
+const viewToPath: Record<AppView, string> = {
+  [AppView.SEARCH]: '/app/search',
+  [AppView.CASES]: '/app/cases',
+  [AppView.CASE_DETAIL]: '/app/cases', // Case detail is handled separately
+  [AppView.SETTINGS]: '/app/settings',
+  [AppView.USER_MANAGEMENT]: '/app/users',
+};
+
+const AppShell: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [selectedSnippet, setSelectedSnippet] = useState<EvidenceSnippet | null>(null);
   const [isNavOpen, setIsNavOpen] = useState(false); // For mobile overlay
   const [isNavCollapsed, setIsNavCollapsed] = useState(false); // For desktop collapse
@@ -25,16 +40,35 @@ const AppShell: React.FC<AppShellProps> = ({ activeView, setActiveView, onGoHome
   const [activeCaseTab, setActiveCaseTab] = useState<CaseTabView>(CaseTabView.EVIDENCE);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Determine active view from current path
+  const activeView = useMemo(() => {
+    const path = location.pathname;
+    
+    // Check for case detail view
+    if (path.includes('/app/cases/') && selectedCaseId) {
+      return AppView.CASE_DETAIL;
+    }
+    
+    return pathToView[path] || AppView.SEARCH;
+  }, [location.pathname, selectedCaseId]);
 
   const handleCaseSelect = (caseId: string) => {
     setSelectedCaseId(caseId);
     setActiveCaseTab(CaseTabView.EVIDENCE); // Reset to evidence tab
-    setActiveView(AppView.CASE_DETAIL);
+    navigate(`/app/cases/${caseId}`);
   };
 
   const handleBackFromCase = () => {
     setSelectedCaseId(null);
-    setActiveView(AppView.CASES);
+    navigate('/app/cases');
+  };
+
+  const handleViewChange = (view: AppView) => {
+    const path = viewToPath[view];
+    if (path) {
+      navigate(path);
+      setSelectedCaseId(null); // Clear case selection when changing views
+    }
   };
 
   // Navigation keyboard shortcuts
@@ -42,10 +76,17 @@ const AppShell: React.FC<AppShellProps> = ({ activeView, setActiveView, onGoHome
     {
       key: 'c',
       handler: () => {
-        setActiveView(AppView.CASES);
+        navigate('/app/cases');
         setSelectedCaseId(null);
       },
       description: 'Go to Cases view',
+    },
+    {
+      key: 's',
+      handler: () => {
+        navigate('/app/search');
+      },
+      description: 'Go to Search view',
     },
     {
       key: 'k',
@@ -68,77 +109,81 @@ const AppShell: React.FC<AppShellProps> = ({ activeView, setActiveView, onGoHome
     },
   ]);
 
-  const renderActiveView = () => {
-    switch (activeView) {
-      case AppView.SEARCH:
-        return <SearchView 
-                  onSnippetSelect={setSelectedSnippet} 
-                  selectedSnippet={selectedSnippet} 
-                  searchQuery={searchQuery}
-                />;
-      case AppView.CASES:
-        return <CaseView onCaseSelect={handleCaseSelect} />;
-      case AppView.CASE_DETAIL:
-        return selectedCaseId ? (
-          <CaseDetailView 
-            caseId={selectedCaseId} 
-            onBack={handleBackFromCase}
-            activeTab={activeCaseTab}
-          />
-        ) : (
-          <CaseView onCaseSelect={handleCaseSelect} />
-        );
-      case AppView.SETTINGS:
-        return <SettingsView />;
-      case AppView.USER_MANAGEMENT:
-        return <UserManagementView />;
-      default:
-        return <SearchView 
-                  onSnippetSelect={setSelectedSnippet} 
-                  selectedSnippet={selectedSnippet}
-                  searchQuery={searchQuery} 
-                />;
-    }
+  const handleGoHome = () => {
+    navigate('/app');
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-900/50 relative overflow-hidden">
-      {/* Mobile Nav Overlay/Backdrop */}
-      <div 
-        onClick={() => setIsNavOpen(false)} 
-        className={`fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden transition-opacity ${
-          isNavOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      ></div>
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-900 text-gray-200">
+      {/* Top bar with integrated search */}
+      <TopBar 
+        onMenuClick={() => setIsNavOpen(!isNavOpen)}
+        activeView={activeView}
+        setActiveView={handleViewChange}
+      >
+        <SearchBar 
+          value={searchQuery} 
+          onChange={(e) => setSearchQuery(e.target.value)}
+          ref={searchInputRef}
+        />
+      </TopBar>
 
-      <LeftNav 
-        activeView={activeView} 
-        setActiveView={(view) => {
-            setActiveView(view);
-            setIsNavOpen(false); // Close mobile nav on selection
-        }}
-        isNavOpen={isNavOpen}
-        isCollapsed={isNavCollapsed}
-        setIsCollapsed={setIsNavCollapsed}
-        onGoHome={onGoHome}
-        activeCaseTab={activeCaseTab}
-        setActiveCaseTab={setActiveCaseTab}
-        selectedCaseId={selectedCaseId}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <TopBar 
-          onMenuClick={() => setIsNavOpen(true)}
-          activeView={activeView}
-          setActiveView={setActiveView}
-        >
-          <SearchBar 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)}
-            ref={searchInputRef}
-          />
-        </TopBar>
-        <main className="flex-1 overflow-y-auto">
-          {renderActiveView()}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Navigation */}
+        <LeftNav 
+          activeView={activeView} 
+          setActiveView={handleViewChange}
+          isNavOpen={isNavOpen}
+          isCollapsed={isNavCollapsed}
+          setIsCollapsed={setIsNavCollapsed}
+          onGoHome={handleGoHome}
+          activeCaseTab={activeCaseTab}
+          setActiveCaseTab={setActiveCaseTab}
+          selectedCaseId={selectedCaseId}
+        />
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto">
+          <Routes>
+            {/* Default route */}
+            <Route index element={<Navigate to="/app/search" replace />} />
+            
+            {/* Search view */}
+            <Route path="search" element={
+              <SearchView 
+                onSnippetSelect={setSelectedSnippet} 
+                selectedSnippet={selectedSnippet} 
+                searchQuery={searchQuery}
+              />
+            } />
+            
+            {/* Cases list view */}
+            <Route path="cases" element={
+              <CaseView onCaseSelect={handleCaseSelect} />
+            } />
+            
+            {/* Case detail view */}
+            <Route path="cases/:caseId" element={
+              selectedCaseId ? (
+                <CaseDetailView 
+                  caseId={selectedCaseId}
+                  onBack={handleBackFromCase}
+                  activeTab={activeCaseTab}
+                />
+              ) : (
+                <Navigate to="/app/cases" replace />
+              )
+            } />
+            
+            {/* Settings view */}
+            <Route path="settings" element={<SettingsView />} />
+            
+            {/* User management view */}
+            <Route path="users" element={<UserManagementView />} />
+            
+            {/* Catch all - redirect to search */}
+            <Route path="*" element={<Navigate to="/app/search" replace />} />
+          </Routes>
         </main>
       </div>
     </div>

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../../contexts/DemoContext';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { 
     SearchIcon, 
     ShieldCheckIcon, 
@@ -79,17 +78,6 @@ const PublicLandingPage: React.FC = () => {
     const navigate = useNavigate();
     const { enterDemoMode } = useDemo();
     const [activeTab, setActiveTab] = useState<'features' | 'demo' | 'pricing'>('features');
-    const [isLoading, setIsLoading] = useState(true);
-
-    // Loading effect
-    useEffect(() => {
-        // Simulate loading time - adjust or remove based on your needs
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1500);
-
-        return () => clearTimeout(timer);
-    }, []);
 
     // Navigation handlers
     const handleTryDemo = () => {
@@ -107,30 +95,6 @@ const PublicLandingPage: React.FC = () => {
 
     return (
         <div className="w-full text-white">
-            {/* Loading Animation Overlay */}
-            {isLoading && (
-                <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-6">
-                        <div className="w-64 h-64">
-                            <DotLottieReact
-                                src="/loading.lottie"
-                                loop
-                                autoplay
-                            />
-                        </div>
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-2">
-                                ForensicFlow
-                            </h2>
-                            <div className="flex items-center gap-2 text-cyan-400">
-                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                                <span className="text-sm font-medium">Initializing Forensic Platform...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-cyan-500/20">
                 <nav className="container mx-auto flex h-16 items-center justify-between px-6">

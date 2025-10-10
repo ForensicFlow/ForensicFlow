@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext';
 import { authApi } from '@/lib/api.ts';
 import Logo from '@/components/Logo';
 
-interface ForgotPasswordPageProps {
-  onBackToLogin: () => void;
-}
-
-const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBackToLogin }) => {
+const ForgotPasswordPage: React.FC = () => {
+  const navigate = useNavigate();
   const { success, error: showError } = useToast();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +62,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBackToLogin }
             </div>
 
             <button
-              onClick={onBackToLogin}
+              onClick={() => navigate('/login')}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transform transition hover:scale-105"
             >
               Back to Login
@@ -132,7 +130,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBackToLogin }
             <div className="text-center">
               <button
                 type="button"
-                onClick={onBackToLogin}
+                onClick={() => navigate('/login')}
                 className="text-blue-400 hover:text-blue-300 font-semibold transition"
               >
                 ← Back to Login

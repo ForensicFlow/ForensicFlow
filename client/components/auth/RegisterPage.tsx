@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import Logo from '@/components/Logo';
 
-interface RegisterPageProps {
-  onSwitchToLogin: () => void;
-}
-
-const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
+const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const { register } = useAuth();
   const { success, error: showError } = useToast();
   const [formData, setFormData] = useState({
@@ -91,7 +89,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
             </p>
             
             <button
-              onClick={onSwitchToLogin}
+              onClick={() => navigate('/login')}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transform transition hover:scale-105"
             >
               Go to Login
@@ -297,7 +295,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={onSwitchToLogin}
+                  onClick={() => navigate('/login')}
                   className="text-blue-400 hover:text-blue-300 font-semibold transition"
                 >
                   Sign in here

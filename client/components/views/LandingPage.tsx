@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ResultCard from '../ResultCard';
 import { evidenceApi, casesApi } from '@/lib/api.ts';
 import { EvidenceSnippet } from '../../types';
@@ -22,10 +23,6 @@ import TopNav from '../TopNav';
 import UserProfileWidget from '../UserProfileWidget';
 import LoadingSkeleton from '../LoadingSkeleton';
 import { useDemo } from '@/contexts/DemoContext.tsx';
-
-interface LandingPageProps {
-  onEnterApp: (view: AppView) => void;
-}
 
 const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="group rounded-xl border border-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-lg bg-gradient-to-br from-white/5 to-white/0 h-full hover:border-cyan-500/30 transition-all duration-300 hover:shadow-cyan-500/10">
@@ -130,7 +127,8 @@ const FeatureCardSkeleton: React.FC = () => (
     </div>
 );
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
+const LandingPage: React.FC = () => {
+    const navigate = useNavigate();
     const { isDemoMode, getSampleData } = useDemo();
     const [heroSnippet, setHeroSnippet] = useState<EvidenceSnippet | null>(null);
     const [stats, setStats] = useState({ cases: 0, evidence: 0 });
@@ -186,14 +184,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                     </div>
 
                     <div className="hidden md:flex justify-center">
-                        <TopNav activeView={-1 as AppView} setActiveView={onEnterApp} />
+                        <TopNav activeView={-1 as AppView} setActiveView={(view: AppView) => navigate(`/app/${view}`)} />
                     </div>
                     
                     <div className="flex flex-1 justify-end items-center gap-4">
                       <button className="rounded-md bg-slate-700/50 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600/50 border border-slate-600 hover:border-slate-500 transition-all">
                           Contact Sales
                       </button>
-                      <UserProfileWidget setActiveView={onEnterApp} />
+                      <UserProfileWidget setActiveView={(view: AppView) => navigate(`/app/${view}`)} />
                     </div>
                 </nav>
             </header>
@@ -226,7 +224,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                     {/* CTA Buttons */}
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <button 
-                            onClick={() => onEnterApp(AppView.CASES)}
+                            onClick={() => navigate('/app/cases')}
                             className="group w-full sm:w-auto relative rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 px-10 py-4 text-lg font-semibold text-white shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all transform hover:scale-105 overflow-hidden"
                         >
                             <span className="relative z-10 flex items-center gap-2">
@@ -236,7 +234,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </button>
                         <button 
-                            onClick={() => onEnterApp(AppView.SEARCH)}
+                            onClick={() => navigate('/app/search')}
                             className="w-full sm:w-auto rounded-lg border-2 border-white/20 bg-white/5 px-10 py-4 text-lg font-semibold text-white shadow-lg backdrop-blur-md hover:bg-white/10 hover:border-white/40 transition-all transform hover:scale-105"
                         >
                             Start Searching
@@ -313,7 +311,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                 <SearchIcon className="h-20 w-20 mx-auto text-slate-600 mb-4" />
                                 <p className="text-lg text-slate-400">No evidence data yet. Upload UFDR files to get started.</p>
                                 <button 
-                                    onClick={() => onEnterApp(AppView.CASES)}
+                                    onClick={() => navigate('/app/cases')}
                                     className="mt-6 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors"
                                 >
                                     Upload First Case
@@ -376,20 +374,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                     title="Search Evidence"
                                     description="AI-powered natural language search across all cases"
                                     count={stats.evidence}
-                                    onClick={() => onEnterApp(AppView.SEARCH)}
+                                    onClick={() => navigate('/app/search')}
                                 />
                                 <QuickAccessCard
                                     icon={<FolderIcon className="h-6 w-6" />}
                                     title="Case Management"
                                     description="Organize investigations with timelines and network graphs"
                                     count={stats.cases}
-                                    onClick={() => onEnterApp(AppView.CASES)}
+                                    onClick={() => navigate('/app/cases')}
                                 />
                                 <QuickAccessCard
                                     icon={<ChartBarIcon className="h-6 w-6" />}
                                     title="Analytics Dashboard"
                                     description="Real-time insights and investigation progress tracking"
-                                    onClick={() => onEnterApp(AppView.CASES)}
+                                    onClick={() => navigate('/app/cases')}
                                 />
                             </>
                         )}
@@ -509,7 +507,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button 
-                                    onClick={() => onEnterApp(AppView.CASES)}
+                                    onClick={() => navigate('/app/cases')}
                                     className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-lg shadow-xl shadow-cyan-500/30 transition-all transform hover:scale-105"
                                 >
                                     Start Free Trial
@@ -536,8 +534,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         <div>
                             <h4 className="font-semibold text-white mb-4">Product</h4>
                             <ul className="space-y-2 text-sm text-slate-400">
-                                <li><button onClick={() => onEnterApp(AppView.SEARCH)} className="hover:text-white transition-colors">Features</button></li>
-                                <li><button onClick={() => onEnterApp(AppView.CASES)} className="hover:text-white transition-colors">Use Cases</button></li>
+                                <li><button onClick={() => navigate('/app/search')} className="hover:text-white transition-colors">Features</button></li>
+                                <li><button onClick={() => navigate('/app/cases')} className="hover:text-white transition-colors">Use Cases</button></li>
                                 <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
                                 <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
                             </ul>
@@ -570,3 +568,4 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
 };
 
 export default LandingPage;
+

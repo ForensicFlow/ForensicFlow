@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 5173,
         host: '0.0.0.0',
+        // Enable history fallback for React Router
+        historyApiFallback: true,
       },
       plugins: [react()],
       css: {

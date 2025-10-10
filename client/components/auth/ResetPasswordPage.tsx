@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import { authApi } from '@/lib/api.ts';
 import Logo from '@/components/Logo';
 
-interface ResetPasswordPageProps {
-  onBackToLogin: () => void;
-}
-
-const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onBackToLogin }) => {
+const ResetPasswordPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { success, error: showError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -18,17 +17,16 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onBackToLogin }) 
   const [urlParams, setUrlParams] = useState<{ uid: string; token: string } | null>(null);
 
   useEffect(() => {
-    // Extract uid and token from URL
-    const params = new URLSearchParams(window.location.search);
-    const uid = params.get('uid');
-    const token = params.get('token');
+    // Extract uid and token from URL using React Router
+    const uid = searchParams.get('uid');
+    const token = searchParams.get('token');
     
     if (uid && token) {
       setUrlParams({ uid, token });
     } else {
       showError('Invalid reset link. Please request a new password reset.');
     }
-  }, []);
+  }, [searchParams, showError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +89,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onBackToLogin }) 
             </p>
             
             <button
-              onClick={onBackToLogin}
+              onClick={() => navigate('/login')}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg transform transition hover:scale-105"
             >
               Go to Login
@@ -117,7 +115,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onBackToLogin }) 
               This password reset link is invalid or has expired. Please request a new one.
             </p>
             <button
-              onClick={onBackToLogin}
+              onClick={() => navigate('/login')}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
             >
               Back to Login
@@ -200,7 +198,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onBackToLogin }) 
             <div className="text-center">
               <button
                 type="button"
-                onClick={onBackToLogin}
+                onClick={() => navigate('/login')}
                 className="text-blue-400 hover:text-blue-300 font-semibold transition"
               >
                 ← Back to Login

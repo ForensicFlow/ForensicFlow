@@ -166,20 +166,20 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <ToastProvider>
-          <DemoProvider>
-            <AuthProvider>
-              <KeyboardShortcutsProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <DemoProvider>
+          <AuthProvider>
+            <KeyboardShortcutsProvider>
+              <BrowserRouter>
                 <AppRoutes />
                 <ToastContainer />
-              </KeyboardShortcutsProvider>
-            </AuthProvider>
-          </DemoProvider>
-        </ToastProvider>
-      </ErrorBoundary>
-    </BrowserRouter>
+              </BrowserRouter>
+            </KeyboardShortcutsProvider>
+          </AuthProvider>
+        </DemoProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 
