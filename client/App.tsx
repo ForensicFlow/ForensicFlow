@@ -1,51 +1,57 @@
-import React, { useState } from 'react';
-import AppShell from './components/AppShell';
-import LiquidBackground from './components/LiquidBackground';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 import CircuitBackground from './components/CircuitBackground';
-import LandingPage from './components/views/LandingPage';
+import LiquidBackground from './components/LiquidBackground';
 import PublicLandingPage from './components/views/PublicLandingPage';
+import LandingPage from './components/views/LandingPage';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
+import AppShell from './components/AppShell';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import LockedFeatureBanner from './components/LockedFeatureBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/ToastContainer';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { DemoProvider, useDemo } from './contexts/DemoContext';
 import { KeyboardShortcutsProvider, useKeyboardShortcutsHelp } from './contexts/KeyboardShortcutsContext';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import { AppView } from './types';
 
-const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, logout } = useAuth();
-  const { isDemoMode, enterDemoMode, exitDemoMode } = useDemo();
-  const { isHelpVisible, toggleHelp, hideHelp } = useKeyboardShortcutsHelp();
-  const [showApp, setShowApp] = useState(false);
-  const [showPublicLanding, setShowPublicLanding] = useState(true);
-  const [activeView, setActiveView] = useState<AppView>(AppView.SEARCH);
-  const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password' | 'reset-password'>(() => {
-    // Check if we're on the reset password URL
-    if (window.location.search.includes('uid=') && window.location.search.includes('token=')) {
-      return 'reset-password';
-    }
-    return 'login';
-  });
+// Public landing page with circuit background
+const PublicLandingRoute: React.FC = () => {
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <CircuitBackground />
+      <div className="relative z-10">
+        <PublicLandingPage />
+      </div>
+    </div>
+  );
+};
 
-  const handleEnterApp = (view: AppView = AppView.SEARCH) => {
-    setActiveView(view);
-    setShowApp(true);
-  };
+// Auth pages with liquid background
+const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <LiquidBackground />
+      <div className="relative z-10">
+        {children}
+      </div>
+    </div>
+  );
+};
 
-  const handleGoHome = () => {
-    setShowApp(false);
-  };
-
+// Protected app routes with session timeout and keyboard shortcuts
+const ProtectedAppLayout: React.FC = () => {
+  const { isAuthenticated, logout } = useAuth();
+  const { isDemoMode } = useDemo();
   const { warning } = useToast();
+  const { isHelpVisible, toggleHelp, hideHelp } = useKeyboardShortcutsHelp();
 
   // Session timeout (30 minutes total, 2 minutes warning)
   const { showWarning: showSessionWarning, remainingTime, extendSession } = useSessionTimeout({
@@ -66,29 +72,8 @@ const AppContent: React.FC = () => {
       description: 'Toggle keyboard shortcuts help',
     },
     {
-      key: 'h',
-      ctrl: true,
-      handler: () => {
-        if (isAuthenticated || isDemoMode) {
-          handleGoHome();
-        }
-      },
-      description: 'Go to home',
-    },
-    {
-      key: 'l',
-      ctrl: true,
-      handler: async () => {
-        if (isAuthenticated) {
-          await logout();
-        }
-      },
-      description: 'Logout',
-    },
-    {
       key: 'Escape',
       handler: () => {
-        // Close help overlay if open
         if (isHelpVisible) {
           hideHelp();
         }
@@ -97,85 +82,6 @@ const AppContent: React.FC = () => {
     },
   ], isAuthenticated || isDemoMode);
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle demo mode entry
-  const handleTryDemo = () => {
-    setShowPublicLanding(false);
-    setShowApp(true);
-    enterDemoMode();
-  };
-
-  // Handle auth navigation from public landing
-  const handleGoToLogin = () => {
-    setShowPublicLanding(false);
-  };
-
-  const handleGoToRegister = () => {
-    setShowPublicLanding(false);
-    setAuthView('register');
-  };
-
-  // Handle exit demo mode
-  const handleExitDemo = () => {
-    exitDemoMode();
-    setShowApp(false);
-    setShowPublicLanding(true);
-  };
-
-  // Show public landing page for visitors (not authenticated)
-  if (!isAuthenticated && showPublicLanding && !isDemoMode) {
-    return (
-      <div className="relative min-h-screen w-full overflow-hidden">
-        <CircuitBackground />
-        <div className="relative z-10">
-          <PublicLandingPage 
-            onTryDemo={handleTryDemo}
-            onLogin={handleGoToLogin}
-            onRegister={handleGoToRegister}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Show login/register/password reset if not authenticated and not on public landing
-  if (!isAuthenticated && !isDemoMode) {
-    return (
-      <div className="relative min-h-screen w-full overflow-hidden">
-        <LiquidBackground />
-        <div className="relative z-10">
-          {authView === 'login' && (
-            <LoginPage 
-              onSwitchToRegister={() => setAuthView('register')}
-              onForgotPassword={() => setAuthView('forgot-password')}
-            />
-          )}
-          {authView === 'register' && (
-            <RegisterPage onSwitchToLogin={() => setAuthView('login')} />
-          )}
-          {authView === 'forgot-password' && (
-            <ForgotPasswordPage onBackToLogin={() => setAuthView('login')} />
-          )}
-          {authView === 'reset-password' && (
-            <ResetPasswordPage onBackToLogin={() => setAuthView('login')} />
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Show main app when authenticated OR in demo mode
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <LiquidBackground />
@@ -184,21 +90,17 @@ const AppContent: React.FC = () => {
         {isDemoMode && (
           <LockedFeatureBanner 
             message="You're viewing in demo mode with sample data. Features like upload, edit, and delete are disabled"
-            onSignUp={handleGoToRegister}
-            onLogin={handleGoToLogin}
             variant="banner"
           />
         )}
         
-        {showApp ? (
-          <AppShell 
-            activeView={activeView} 
-            setActiveView={setActiveView} 
-            onGoHome={handleGoHome} 
-          />
-        ) : (
-          <LandingPage onEnterApp={handleEnterApp} />
-        )}
+        <Routes>
+          {/* Landing page for authenticated users */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* App shell routes - handles view parameter internally */}
+          <Route path="/*" element={<AppShell />} />
+        </Routes>
       </div>
       
       {/* Session Timeout Warning */}
@@ -216,20 +118,68 @@ const AppContent: React.FC = () => {
   );
 };
 
+// Main routing component
+const AppRoutes: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={!isAuthenticated ? <PublicLandingRoute /> : <Navigate to="/app" replace />} />
+      
+      <Route path="/login" element={
+        !isAuthenticated ? (
+          <AuthLayout><LoginPage /></AuthLayout>
+        ) : (
+          <Navigate to="/app" replace />
+        )
+      } />
+      
+      <Route path="/register" element={
+        !isAuthenticated ? (
+          <AuthLayout><RegisterPage /></AuthLayout>
+        ) : (
+          <Navigate to="/app" replace />
+        )
+      } />
+      
+      <Route path="/forgot-password" element={
+        <AuthLayout><ForgotPasswordPage /></AuthLayout>
+      } />
+      
+      <Route path="/reset-password" element={
+        <AuthLayout><ResetPasswordPage /></AuthLayout>
+      } />
+      
+      {/* Protected app routes */}
+      <Route path="/app/*" element={
+        <ProtectedRoute>
+          <ProtectedAppLayout />
+        </ProtectedRoute>
+      } />
+      
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
 const App: React.FC = () => {
   return (
-    <ErrorBoundary>
-      <ToastProvider>
-        <DemoProvider>
-          <AuthProvider>
-            <KeyboardShortcutsProvider>
-              <AppContent />
-              <ToastContainer />
-            </KeyboardShortcutsProvider>
-          </AuthProvider>
-        </DemoProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+    <BrowserRouter>
+      <ErrorBoundary>
+        <ToastProvider>
+          <DemoProvider>
+            <AuthProvider>
+              <KeyboardShortcutsProvider>
+                <AppRoutes />
+                <ToastContainer />
+              </KeyboardShortcutsProvider>
+            </AuthProvider>
+          </DemoProvider>
+        </ToastProvider>
+      </ErrorBoundary>
+    </BrowserRouter>
   );
 };
 
