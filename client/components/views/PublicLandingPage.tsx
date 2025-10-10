@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDemo } from '../../contexts/DemoContext';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { 
     SearchIcon, 
     ShieldCheckIcon, 
@@ -16,12 +19,6 @@ import {
     EyeIcon
 } from '../icons';
 import { ForensicFlowLogo } from '../Logo';
-
-interface PublicLandingPageProps {
-  onTryDemo: () => void;
-  onLogin: () => void;
-  onRegister: () => void;
-}
 
 const FeatureCard: React.FC<{ 
   icon: React.ReactNode; 
@@ -78,11 +75,62 @@ const UseCaseCard: React.FC<{
     </div>
 );
 
-const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogin, onRegister }) => {
+const PublicLandingPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { enterDemoMode } = useDemo();
     const [activeTab, setActiveTab] = useState<'features' | 'demo' | 'pricing'>('features');
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Loading effect
+    useEffect(() => {
+        // Simulate loading time - adjust or remove based on your needs
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Navigation handlers
+    const handleTryDemo = () => {
+        enterDemoMode();
+        navigate('/app');
+    };
+
+    const handleLogin = () => {
+        navigate('/login');
+    };
+
+    const handleRegister = () => {
+        navigate('/register');
+    };
 
     return (
         <div className="w-full text-white">
+            {/* Loading Animation Overlay */}
+            {isLoading && (
+                <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-6">
+                        <div className="w-64 h-64">
+                            <DotLottieReact
+                                src="/loading.lottie"
+                                loop
+                                autoplay
+                            />
+                        </div>
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-2">
+                                ForensicFlow
+                            </h2>
+                            <div className="flex items-center gap-2 text-cyan-400">
+                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                                <span className="text-sm font-medium">Initializing Forensic Platform...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-cyan-500/20">
                 <nav className="container mx-auto flex h-16 items-center justify-between px-6">
@@ -114,13 +162,13 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                     
                     <div className="flex items-center gap-3">
                         <button 
-                            onClick={onLogin}
+                            onClick={handleLogin}
                             className="rounded-lg bg-gray-800/80 border border-cyan-500/30 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700/80 hover:border-cyan-400/50 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                         >
                             Login
                         </button>
                         <button 
-                            onClick={onRegister}
+                            onClick={handleRegister}
                             className="group relative rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-bold text-white transition-all overflow-hidden hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
                         >
                             <span className="relative z-10">Sign Up</span>
@@ -164,7 +212,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                     {/* CTA Buttons */}
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <button 
-                            onClick={onTryDemo}
+                            onClick={handleTryDemo}
                             className="group relative w-full sm:w-auto rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_40px_rgba(6,182,212,0.4)] hover:shadow-[0_0_60px_rgba(6,182,212,0.6)] transition-all transform hover:scale-105 overflow-hidden"
                         >
                             <span className="relative z-10 flex items-center gap-2">
@@ -178,7 +226,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                             </div>
                         </button>
                         <button 
-                            onClick={onRegister}
+                            onClick={handleRegister}
                             className="w-full sm:w-auto rounded-lg border-2 border-cyan-500/50 bg-gray-900/60 backdrop-blur-xl px-10 py-4 text-lg font-bold text-white shadow-lg hover:bg-cyan-500/10 hover:border-cyan-400 transition-all transform hover:scale-105 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]"
                         >
                             Start Free Trial
@@ -223,7 +271,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/10 to-transparent h-32 animate-[data-flow_3s_linear_infinite]"></div>
                                     
                                     <button 
-                                        onClick={onTryDemo}
+                                        onClick={handleTryDemo}
                                         className="group relative flex flex-col items-center gap-4 px-8 py-6 rounded-xl bg-gray-900/90 backdrop-blur-md border-2 border-cyan-500/40 hover:border-cyan-400 transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(6,182,212,0.5)]"
                                     >
                                         <div className="relative w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center group-hover:from-cyan-400 group-hover:to-blue-500 transition-all shadow-[0_0_30px_rgba(6,182,212,0.5)]">
@@ -326,7 +374,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                     {/* Demo CTA */}
                     <div className="mt-12 text-center">
                         <button 
-                            onClick={onTryDemo}
+                            onClick={handleTryDemo}
                             className="inline-flex items-center gap-2 px-8 py-3 bg-gray-900/80 border-2 border-cyan-500/40 rounded-lg text-white font-bold hover:bg-gray-800/80 hover:border-cyan-400/60 transition-all hover:shadow-[0_0_25px_rgba(6,182,212,0.4)]"
                         >
                             <EyeIcon className="h-5 w-5 text-cyan-400" />
@@ -466,7 +514,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button 
-                                    onClick={onTryDemo}
+                                    onClick={handleTryDemo}
                                     className="group relative px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg shadow-[0_0_40px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105 flex items-center justify-center gap-2 overflow-hidden"
                                 >
                                     <EyeIcon className="h-5 w-5 relative z-10" />
@@ -474,7 +522,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onTryDemo, onLogi
                                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
                                 </button>
                                 <button 
-                                    onClick={onRegister}
+                                    onClick={handleRegister}
                                     className="px-8 py-4 border-2 border-cyan-500/50 hover:border-cyan-400 bg-gray-900/60 text-white font-bold rounded-lg backdrop-blur-md hover:bg-cyan-500/10 transition-all hover:shadow-[0_0_25px_rgba(6,182,212,0.3)]"
                                 >
                                     Start Free Trial

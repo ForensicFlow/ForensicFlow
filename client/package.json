@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@google/genai": "^1.21.0",
+    "@lottiefiles/dotlottie-react": "^0.17.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.9.3",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1"
   },
