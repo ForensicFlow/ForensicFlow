@@ -159,7 +159,10 @@ Keep your response professional, well-structured, and visually scannable."""
                     summary = result['candidates'][0]['content']['parts'][0]['text'].strip()
                     
                     # Calculate confidence based on response quality
-                    confidence = self._calculate_confidence(summary, evidence_items)
+                    confidence, confidence_explanation = self._calculate_confidence(summary, evidence_items)
+                    
+                    # Append confidence explanation to summary
+                    summary += f"\n\n---\n\n> **Confidence: {int(confidence * 100)}%** — {confidence_explanation}"
                     
                     return summary, confidence
             
@@ -236,7 +239,10 @@ Structure it like a professional forensic analysis report with clear visual hier
             )
             
             summary = response.choices[0].message.content
-            confidence = self._calculate_confidence(summary, evidence_items)
+            confidence, confidence_explanation = self._calculate_confidence(summary, evidence_items)
+            
+            # Append confidence explanation to summary
+            summary += f"\n\n---\n\n> **Confidence: {int(confidence * 100)}%** — {confidence_explanation}"
             
             return summary, confidence
             
@@ -331,21 +337,404 @@ Evidence #{idx}:
         
         return "\n".join(formatted)
     
-    def _calculate_confidence(self, summary: str, evidence_items: List[Dict]) -> float:
-        """Calculate confidence score for the analysis"""
+    def _calculate_confidence(self, summary: str, evidence_items: List[Dict]) -> Tuple[float, str]:
+        """
+        Calculate confidence score for the analysis with explanation
+        
+        Returns:
+            Tuple of (confidence_score, explanation)
+        """
         # Basic confidence calculation
         confidence = 0.7
+        reasons = []
         
         # Increase confidence if summary mentions specific evidence
-        if any(item.get('id', '') in summary for item in evidence_items):
+        evidence_mentioned = sum(1 for item in evidence_items if str(item.get('id', '')) in summary)
+        if evidence_mentioned > 0:
             confidence += 0.1
+            reasons.append(f"references {evidence_mentioned} specific evidence items")
         
         # Increase confidence based on length and detail
         if len(summary) > 200:
             confidence += 0.1
+            reasons.append("comprehensive analysis provided")
+        
+        # Check for pattern analysis
+        if len(evidence_items) > 5 and any(word in summary.lower() for word in ['pattern', 'connection', 'relationship']):
+            confidence += 0.05
+            reasons.append("pattern analysis included")
         
         # Cap at 0.95
-        return min(0.95, confidence)
+        confidence = min(0.95, confidence)
+        
+        # Build explanation
+        if reasons:
+            explanation = f"Based on {', '.join(reasons)}"
+        else:
+            explanation = "Based on general analysis"
+        
+        return confidence, explanation
+    
+    def extract_entities_and_relationships(self, evidence_items: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Extract entities and relationships from evidence for network graph generation
+        
+        Args:
+            evidence_items: List of evidence items to analyze
+            
+        Returns:
+            Dict with 'nodes' and 'links' for network graph visualization
+        """
+        if not evidence_items:
+            return {'nodes': [], 'links': []}
+        
+        # Limit to first 50 items for performance
+        items_to_analyze = evidence_items[:50]
+        
+        if self.use_gemini:
+            return self._extract_relationships_gemini(items_to_analyze)
+        else:
+            return self._extract_relationships_fallback(items_to_analyze)
+    
+    def _extract_relationships_gemini(self, evidence_items: List[Dict]) -> Dict[str, Any]:
+        """Use Gemini to extract entities and relationships"""
+        try:
+            import requests
+            from datetime import datetime
+            
+            # Format evidence for AI
+            evidence_context = ""
+            for idx, item in enumerate(evidence_items[:30], 1):
+                evidence_context += f"\nEvidence #{idx} (ID: {item.get('id', 'N/A')}):\n"
+                evidence_context += f"- Type: {item.get('type', 'Unknown')}\n"
+                evidence_context += f"- Source: {item.get('source', 'Unknown')}\n"
+                evidence_context += f"- Content: {item.get('content', '')[:300]}\n"
+                evidence_context += f"- Timestamp: {item.get('timestamp', 'N/A')}\n"
+                
+                # Include entities if available
+                entities_str = ", ".join([
+                    f"{e.get('type', 'Unknown')}: {e.get('value', '')}" 
+                    for e in item.get('entities', [])
+                ])
+                if entities_str:
+                    evidence_context += f"- Entities: {entities_str}\n"
+            
+            prompt = f"""Analyze the following forensic evidence and extract entities and their relationships for a network graph visualization.
+
+EVIDENCE:
+{evidence_context}
+
+Your task:
+1. Identify all significant entities (people, organizations, locations, devices, accounts, phone numbers, etc.)
+2. Determine relationships between entities based on the evidence
+3. Return the data in JSON format
+
+Return ONLY valid JSON in this exact format (no markdown, no explanations):
+{{
+  "nodes": [
+    {{"id": "Entity Name", "group": "person|organization|location|device|account|other", "label": "Short description"}},
+    ...
+  ],
+  "links": [
+    {{"source": "Entity A", "target": "Entity B", "label": "relationship type", "evidence_ids": ["EV1", "EV2"]}},
+    ...
+  ]
+}}
+
+Important:
+- Use clear, concise entity names
+- Group similar entities (e.g., all phone numbers as "Phone: +1234...")
+- Only include relationships that are clearly evident
+- Limit to top 20 most important nodes
+- Return valid JSON only, no markdown code blocks"""
+
+            response = requests.post(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                headers={
+                    'Content-Type': 'application/json',
+                    'X-goog-api-key': self.gemini_key
+                },
+                json={
+                    'contents': [{
+                        'parts': [{'text': prompt}]
+                    }],
+                    'generationConfig': {
+                        'temperature': 0.3,  # Lower for more consistent JSON
+                    }
+                },
+                timeout=20
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if 'candidates' in result and len(result['candidates']) > 0:
+                    text_response = result['candidates'][0]['content']['parts'][0]['text'].strip()
+                    
+                    # Try to extract JSON from response
+                    # Remove markdown code blocks if present
+                    text_response = re.sub(r'```json\s*', '', text_response)
+                    text_response = re.sub(r'```\s*$', '', text_response)
+                    text_response = text_response.strip()
+                    
+                    try:
+                        graph_data = json.loads(text_response)
+                        
+                        # Validate structure
+                        if 'nodes' in graph_data and 'links' in graph_data:
+                            print(f"[Network Graph] Extracted {len(graph_data['nodes'])} nodes and {len(graph_data['links'])} links")
+                            return graph_data
+                    except json.JSONDecodeError as e:
+                        print(f"[Network Graph] JSON parse error: {e}")
+                        print(f"[Network Graph] Response was: {text_response[:200]}")
+            
+            # Fallback if AI extraction fails
+            return self._extract_relationships_fallback(evidence_items)
+            
+        except Exception as e:
+            print(f"[Network Graph] Gemini extraction error: {e}")
+            return self._extract_relationships_fallback(evidence_items)
+    
+    def _extract_relationships_fallback(self, evidence_items: List[Dict]) -> Dict[str, Any]:
+        """
+        Fallback: Extract basic relationships from evidence entities
+        Enhanced to create meaningful graphs even without AI
+        """
+        nodes = {}
+        links = []
+        
+        print(f"[Network Graph Fallback] Processing {len(evidence_items)} evidence items")
+        
+        # Extract entities from evidence
+        for item in evidence_items[:30]:
+            source_node = item.get('source', 'Unknown')
+            device_node = item.get('device', None)
+            item_type = item.get('type', 'evidence')
+            
+            # Add source as node
+            if source_node and source_node != 'Unknown':
+                # Shorten source name if too long
+                label = source_node[:30] + '...' if len(source_node) > 30 else source_node
+                nodes[source_node] = {
+                    'id': source_node, 
+                    'group': item_type if item_type in ['message', 'file', 'call'] else 'source', 
+                    'label': label
+                }
+            
+            # Add device as node
+            if device_node and device_node != 'Unknown':
+                device_label = device_node[:30] + '...' if len(device_node) > 30 else device_node
+                nodes[device_node] = {
+                    'id': device_node, 
+                    'group': 'device', 
+                    'label': device_label
+                }
+                
+                # Link device to source
+                if source_node != 'Unknown':
+                    link_key = f"{device_node}-{source_node}"
+                    links.append({
+                        'source': device_node,
+                        'target': source_node,
+                        'label': 'contains',
+                        'evidence_ids': [str(item.get('id', ''))]
+                    })
+            
+            # Extract entities from item
+            for entity in item.get('entities', []):
+                e_type = entity.get('type', 'other')
+                e_value = entity.get('value', '')
+                
+                if e_value and len(e_value) > 2:
+                    # Create cleaner node IDs
+                    if e_type in ['phone_number', 'email', 'crypto_address']:
+                        node_id = e_value
+                        node_label = e_value[:30] + '...' if len(e_value) > 30 else e_value
+                    else:
+                        node_id = f"{e_type}:{e_value}"
+                        node_label = e_value[:25] + '...' if len(e_value) > 25 else e_value
+                    
+                    nodes[node_id] = {
+                        'id': node_id,
+                        'group': e_type,
+                        'label': node_label
+                    }
+                    
+                    # Link entity to source
+                    if source_node != 'Unknown':
+                        links.append({
+                            'source': source_node,
+                            'target': node_id,
+                            'label': 'mentions',
+                            'evidence_ids': [str(item.get('id', ''))]
+                        })
+        
+        # If we have very few nodes, create a basic structure
+        if len(nodes) < 2:
+            print("[Network Graph Fallback] Too few nodes, creating basic structure")
+            # Create basic case structure
+            nodes = {
+                'Case Evidence': {'id': 'Case Evidence', 'group': 'case', 'label': 'Case Evidence'},
+            }
+            
+            # Add evidence items as nodes
+            for idx, item in enumerate(evidence_items[:5]):
+                evidence_id = f"Evidence {item.get('id', idx)}"
+                nodes[evidence_id] = {
+                    'id': evidence_id,
+                    'group': item.get('type', 'evidence'),
+                    'label': f"Evidence {item.get('id', idx)}"
+                }
+                links.append({
+                    'source': 'Case Evidence',
+                    'target': evidence_id,
+                    'label': 'includes',
+                    'evidence_ids': [str(item.get('id', ''))]
+                })
+        
+        # Limit nodes to avoid overcrowding
+        node_list = list(nodes.values())[:20]
+        
+        # Filter links to only include existing nodes
+        node_ids = {n['id'] for n in node_list}
+        filtered_links = [
+            link for link in links 
+            if link['source'] in node_ids and link['target'] in node_ids
+        ]
+        
+        # Remove duplicate links
+        unique_links = []
+        seen = set()
+        for link in filtered_links:
+            key = f"{link['source']}-{link['target']}"
+            if key not in seen:
+                seen.add(key)
+                unique_links.append(link)
+        
+        result = {
+            'nodes': node_list,
+            'links': unique_links[:30]  # Limit links too
+        }
+        
+        print(f"[Network Graph Fallback] Created {len(result['nodes'])} nodes and {len(result['links'])} links")
+        
+        return result
+    
+    def detect_intent(self, evidence_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Detect intent and classify messages as normal, anomalous, or critical
+        
+        Returns:
+            List of evidence items with added 'intent_flag' and 'anomaly_score'
+        """
+        intent_keywords = {
+            'critical': ['meet', 'send money', 'deliver', 'hide', 'delete', 'destroy', 'plan', 
+                        'transaction', 'transfer', 'urgent', 'tonight', 'tomorrow', 'secret'],
+            'suspicious': ['unusual', 'weird', 'strange', 'anonymous', 'unknown', 'foreign',
+                          'late night', 'midnight', 'cash', 'untraceable']
+        }
+        
+        enriched_items = []
+        
+        for item in evidence_items:
+            content = item.get('content', '').lower()
+            item_copy = item.copy()
+            
+            # Default values
+            intent_flag = 'normal'
+            anomaly_score = 0.0
+            
+            # Check for critical keywords
+            critical_matches = sum(1 for keyword in intent_keywords['critical'] if keyword in content)
+            suspicious_matches = sum(1 for keyword in intent_keywords['suspicious'] if keyword in content)
+            
+            if critical_matches >= 2:
+                intent_flag = 'critical'
+                anomaly_score = 0.8 + (critical_matches * 0.05)
+            elif critical_matches >= 1:
+                intent_flag = 'anomalous'
+                anomaly_score = 0.5 + (critical_matches * 0.1)
+            elif suspicious_matches >= 2:
+                intent_flag = 'anomalous'
+                anomaly_score = 0.4 + (suspicious_matches * 0.05)
+            
+            # Check for generic patterns (likely not important)
+            if 'hello, this is message number' in content.lower():
+                intent_flag = 'generic'
+                anomaly_score = 0.1
+            
+            # Cap anomaly score
+            anomaly_score = min(1.0, anomaly_score)
+            
+            item_copy['intent_flag'] = intent_flag
+            item_copy['anomaly_score'] = anomaly_score
+            
+            enriched_items.append(item_copy)
+        
+        return enriched_items
+    
+    def generate_message_clusters(self, evidence_items: List[Dict[str, Any]]) -> Dict[str, List[Dict]]:
+        """
+        Cluster related messages together based on timestamp proximity and content similarity
+        
+        Returns:
+            Dict with cluster_id -> list of evidence items
+        """
+        from datetime import datetime, timedelta
+        
+        clusters = {}
+        cluster_id = 0
+        
+        # Sort by timestamp
+        sorted_items = sorted(
+            evidence_items,
+            key=lambda x: x.get('timestamp', ''),
+            reverse=False
+        )
+        
+        for i, item in enumerate(sorted_items):
+            assigned = False
+            
+            # Try to assign to existing cluster
+            for cid, cluster_items in clusters.items():
+                if not cluster_items:
+                    continue
+                    
+                last_item = cluster_items[-1]
+                
+                # Check timestamp proximity (within 1 hour)
+                try:
+                    current_time = datetime.fromisoformat(item.get('timestamp', '').replace('Z', '+00:00'))
+                    last_time = datetime.fromisoformat(last_item.get('timestamp', '').replace('Z', '+00:00'))
+                    
+                    time_diff = abs((current_time - last_time).total_seconds())
+                    
+                    # Check content similarity (simple word overlap)
+                    current_words = set(item.get('content', '').lower().split())
+                    last_words = set(last_item.get('content', '').lower().split())
+                    
+                    if current_words and last_words:
+                        overlap = len(current_words & last_words) / len(current_words | last_words)
+                    else:
+                        overlap = 0
+                    
+                    # Cluster if within 1 hour AND similar content (>50% overlap)
+                    if time_diff < 3600 and overlap > 0.5:
+                        item_copy = item.copy()
+                        item_copy['cluster_id'] = cid
+                        cluster_items.append(item_copy)
+                        assigned = True
+                        break
+                except:
+                    continue
+            
+            # Create new cluster if not assigned
+            if not assigned:
+                item_copy = item.copy()
+                item_copy['cluster_id'] = cluster_id
+                clusters[cluster_id] = [item_copy]
+                cluster_id += 1
+        
+        return clusters
     
     def expand_query_semantically(self, query_text: str) -> List[str]:
         """
@@ -542,8 +931,71 @@ Search terms:"""
         return insights
     
     def _detect_patterns(self, evidence_items: List[Dict]) -> List[Dict]:
-        """Detect patterns in evidence"""
+        """
+        Enhanced pattern detection with regex for financial and communication data
+        """
         patterns = []
+        
+        # Regex patterns for detection
+        regex_patterns = {
+            'crypto_address': {
+                'pattern': r'\b(0x[a-fA-F0-9]{40}|[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{39,59})\b',
+                'description': 'Cryptocurrency wallet address'
+            },
+            'bank_account': {
+                'pattern': r'\b\d{8,18}\b',
+                'description': 'Potential bank account number'
+            },
+            'amount': {
+                'pattern': r'\$\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d{1,3}(?:,\d{3})*(?:\.\d{2})?\s*(?:USD|EUR|BTC|ETH)',
+                'description': 'Financial amount'
+            },
+            'phone': {
+                'pattern': r'\+?\d{1,4}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}',
+                'description': 'Phone number'
+            },
+            'email': {
+                'pattern': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+                'description': 'Email address'
+            },
+            'ip_address': {
+                'pattern': r'\b(?:\d{1,3}\.){3}\d{1,3}\b',
+                'description': 'IP address'
+            },
+            'meeting_reference': {
+                'pattern': r'\b(meet|meeting|appointment|schedule|tomorrow|tonight|today)\b',
+                'description': 'Meeting arrangement'
+            }
+        }
+        
+        # Detect regex patterns
+        pattern_matches = {}
+        for item in evidence_items:
+            content = item.get('content', '')
+            
+            for pattern_name, pattern_info in regex_patterns.items():
+                matches = re.findall(pattern_info['pattern'], content, re.IGNORECASE)
+                if matches:
+                    if pattern_name not in pattern_matches:
+                        pattern_matches[pattern_name] = []
+                    pattern_matches[pattern_name].extend(matches)
+        
+        # Create pattern reports for significant findings
+        for pattern_name, matches in pattern_matches.items():
+            unique_matches = list(set(matches))
+            if len(unique_matches) >= 2:  # At least 2 unique occurrences
+                pattern_info = regex_patterns[pattern_name]
+                patterns.append({
+                    'title': f'{pattern_info["description"]} Pattern Detected',
+                    'description': f'Found {len(unique_matches)} unique {pattern_info["description"].lower()}s across {len(matches)} instances in the evidence.',
+                    'confidence': min(0.9, 0.6 + (len(unique_matches) * 0.05)),
+                    'metadata': {
+                        'pattern_type': pattern_name,
+                        'unique_count': len(unique_matches),
+                        'total_count': len(matches),
+                        'samples': unique_matches[:3]  # First 3 examples
+                    }
+                })
         
         # Frequency analysis of entities
         entity_freq = {}
@@ -563,7 +1015,44 @@ Search terms:"""
                     'metadata': {'frequency': freq, 'type': e_type, 'value': e_value}
                 })
         
-        return patterns[:5]  # Return top 5 patterns
+        # Detect temporal patterns (frequency spikes)
+        from datetime import datetime, timedelta
+        try:
+            timestamps = []
+            for item in evidence_items:
+                try:
+                    ts = datetime.fromisoformat(item.get('timestamp', '').replace('Z', '+00:00'))
+                    timestamps.append(ts)
+                except:
+                    continue
+            
+            if len(timestamps) > 10:
+                # Group by hour windows and find spikes
+                hour_windows = {}
+                for ts in timestamps:
+                    hour_key = ts.strftime('%Y-%m-%d %H:00')
+                    hour_windows[hour_key] = hour_windows.get(hour_key, 0) + 1
+                
+                avg_per_hour = len(timestamps) / max(len(hour_windows), 1)
+                spikes = [(k, v) for k, v in hour_windows.items() if v > avg_per_hour * 2]
+                
+                if spikes:
+                    spikes.sort(key=lambda x: x[1], reverse=True)
+                    top_spike = spikes[0]
+                    patterns.append({
+                        'title': 'Unusual Activity Spike Detected',
+                        'description': f'Activity spike at {top_spike[0]} with {top_spike[1]} events (avg: {avg_per_hour:.1f} per hour)',
+                        'confidence': 0.75,
+                        'metadata': {
+                            'spike_time': top_spike[0],
+                            'event_count': top_spike[1],
+                            'average': avg_per_hour
+                        }
+                    })
+        except:
+            pass
+        
+        return patterns[:8]  # Return top 8 patterns
     
     def _detect_anomalies(self, evidence_items: List[Dict]) -> List[Dict]:
         """Detect anomalies in evidence"""

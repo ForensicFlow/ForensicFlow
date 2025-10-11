@@ -371,6 +371,26 @@ class QueryViewSet(viewsets.ModelViewSet):
                             'data': chat_messages
                         }
         
+        # Network graph visualization for relationship queries
+        relationship_keywords = ['relation', 'connection', 'network', 'linked', 'between', 
+                                'connect', 'who knows', 'associated', 'ties', 'relationship']
+        
+        if any(word in query_lower for word in relationship_keywords):
+            if len(evidence_data) > 1:  # Need at least 2 items for relationships
+                # Use AI service to extract entities and relationships
+                from .ai_service import AIService
+                ai_service = AIService()
+                
+                print(f"[Network Graph] Detected relationship query: {query_text}")
+                graph_data = ai_service.extract_entities_and_relationships(evidence_data)
+                
+                # Only return if we found meaningful relationships
+                if graph_data and len(graph_data.get('nodes', [])) > 1:
+                    return {
+                        'type': 'network',
+                        'data': graph_data
+                    }
+        
         return None  # No visualization needed
     
     @action(detail=False, methods=['post'])
