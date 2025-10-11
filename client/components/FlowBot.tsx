@@ -82,22 +82,22 @@ const FlowBot: React.FC<FlowBotProps> = ({
 
 Try asking me:
 • "Show me all chats containing crypto addresses"
-• "Find communications with foreign numbers"
-• "What happened on March 15th?"
-• "Show me the connection between these contacts"
+• "Show me a network graph of connections"
+• "Create a timeline of events on March 15th"
+• "What patterns do you see in the communications?"
 ${isDemoMode ? `
 **Demo Mode Active** 🎭
 
 I'm currently using sample evidence data for demonstration. Try these demo queries:
 • "crypto" - Find cryptocurrency-related evidence
-• "wallet" - Look for wallet addresses and transactions
-• "phone" - Search for phone numbers and calls
-• "email" - Find email communications
-• "money" - Look for financial transactions
+• "show network graph" - See entity connections
+• "create a timeline" - View events chronologically
 • "foreign" - Search for international connections
 
 The demo includes 3 sample cases with realistic forensic evidence for testing!` : `
-**Demo Mode**: If you don't have a Gemini API key configured, I'll still search evidence and provide basic analysis.`}
+**Agent Mode Enabled** ✨
+
+With Gemini AI configured, I can use advanced tools to visualize data, analyze patterns, and maintain conversation context throughout our investigation.`}
 
 What would you like to investigate?`,
       timestamp: new Date(),
@@ -200,11 +200,12 @@ What would you like to investigate?`,
           type: 'bot',
           content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case. I can help you analyze evidence using natural language queries.
 
+
 Try asking me:
 • "Show me all chats containing crypto addresses"
-• "Find communications with foreign numbers"
-• "What happened on March 15th?"
-• "Show me the connection between these contacts"
+• "Show me a network graph of connections"
+• "Create a timeline of events"
+• "What patterns do you see?"
 
 What would you like to investigate?`,
           timestamp: new Date(),
@@ -243,7 +244,9 @@ What would you like to investigate?`,
         loadedMessages.unshift({
           id: '1',
           type: 'bot',
-          content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case.`,
+          content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case.
+
+**🤖 Enhanced AI Agent:** I can generate visualizations, maintain context, and use specialized tools to help with your investigation.`,
           timestamp: new Date(),
         });
       }

@@ -192,11 +192,13 @@ class QueryViewSet(viewsets.ModelViewSet):
         # Get conversation history from request (for conversational memory)
         conversation_history = request.data.get('conversation_history', [])
         
-        # Process with AI to generate comprehensive summary WITH CONVERSATION CONTEXT
-        summary, confidence = ai_service.process_natural_language_query(
+        # Process with AI using Agent Framework (includes tool use and function calling)
+        # Returns: (summary, confidence, embedded_component)
+        summary, confidence, agent_embedded_component = ai_service.process_query_with_agent(
             query_text, 
             evidence_data,
-            conversation_history
+            conversation_history,
+            case_id=case_id
         )
         
         processing_time = time.time() - start_time
@@ -218,14 +220,27 @@ class QueryViewSet(viewsets.ModelViewSet):
         # Generate follow-up suggestions
         suggested_followups = self._generate_followup_suggestions(query_text, evidence_data, case)
         
-        # Determine if we should return an embedded visualization
-        embedded_component = self._determine_visualization(query_text, evidence_data)
+        # Use embedded component from agent (if generated), otherwise determine from query pattern
+        embedded_component = agent_embedded_component
+        if not embedded_component:
+            # Fallback to pattern-based visualization detection
+            embedded_component = self._determine_visualization(query_text, evidence_data)
+        
+        # DYNAMIC EVIDENCE SELECTION: Select most relevant evidence based on AI's actual response
+        relevant_evidence = ai_service._select_relevant_evidence(
+            ai_response=summary,
+            all_evidence=evidence_data,
+            limit=10  # Return top 10 most relevant items
+        )
+        
+        print(f"[Dynamic Selection] Filtered {len(evidence_data)} items to {len(relevant_evidence)} most relevant")
         
         response_data = {
             'query': QuerySerializer(query_obj).data,
             'summary': summary,
-            'evidence': evidence_data,
-            'results_count': len(evidence_data),
+            'evidence': relevant_evidence,  # Return dynamically selected evidence
+            'total_evidence_count': len(evidence_data),  # Total available
+            'results_count': len(relevant_evidence),  # What we're showing
             'confidence': confidence,
             'processing_time': processing_time,
             'suggested_followups': suggested_followups
@@ -234,6 +249,7 @@ class QueryViewSet(viewsets.ModelViewSet):
         # Add embedded component if applicable
         if embedded_component:
             response_data['embedded_component'] = embedded_component
+            print(f"[Response] Including embedded component: {embedded_component.get('type')}")
         
         return Response(response_data)
     

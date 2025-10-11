@@ -8,6 +8,189 @@ from django.conf import settings
 from django.core.cache import cache
 import re
 import hashlib
+from datetime import datetime
+from collections import deque
+
+
+class ConversationManager:
+    """
+    Manages conversation context and state for FlowBot
+    Tracks conversation history, entities, and provides context summarization
+    """
+    
+    def __init__(self, max_exchanges: int = 10, max_tokens: int = 8000):
+        self.max_exchanges = max_exchanges
+        self.max_tokens = max_tokens
+        self.exchanges = deque(maxlen=max_exchanges)
+        self.tracked_entities = {}  # entity_id -> {type, value, mentions, last_seen}
+        self.established_facts = set()  # Track facts already established (to avoid redundancy)
+        self.query_count = 0  # Track number of queries for proactive summaries
+        self.conversation_state = {}  # Current investigation focus
+        
+    def add_exchange(self, query: str, response: str, metadata: Optional[Dict] = None):
+        """Add a conversation exchange with timestamp"""
+        exchange = {
+            'query': query,
+            'response': response,
+            'timestamp': datetime.now().isoformat(),
+            'metadata': metadata or {}
+        }
+        self.exchanges.append(exchange)
+        
+        self.query_count += 1
+        
+        # Extract and track entities mentioned in this exchange
+        self._track_entities_in_text(query)
+        self._track_entities_in_text(response)
+        
+        # Extract established facts from response
+        self._extract_established_facts(response)
+    
+    def _extract_established_facts(self, response: str):
+        """Extract key facts from AI responses to avoid redundancy"""
+        # Extract facts like "X is a central hub", "Y pattern indicates..."
+        fact_patterns = [
+            r'([A-Z][^.!?]*(?:is a|are|was|were)[^.!?]*(?:central|hub|coordinator|key|important)[^.!?]*)',
+            r'([A-Z][^.!?]*(?:suggests|indicates|shows|reveals)[^.!?]*)',
+            r'([A-Z][^.!?]*(?:pattern|trend|connection)[^.!?]*)',
+        ]
+        
+        for pattern in fact_patterns:
+            matches = re.findall(pattern, response)
+            for match in matches:
+                # Normalize fact (lowercase, trim)
+                fact = match.strip().lower()
+                if len(fact) > 20:  # Only meaningful facts
+                    self.established_facts.add(fact)
+        
+        # Limit size to prevent memory issues
+        if len(self.established_facts) > 50:
+            # Remove oldest (using set doesn't preserve order, so just clear some)
+            self.established_facts = set(list(self.established_facts)[-40:])
+        
+    def _track_entities_in_text(self, text: str):
+        """Extract and track entities from text"""
+        # Simple entity extraction (can be enhanced with NER)
+        patterns = {
+            'phone': r'\+?\d{10,15}',
+            'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            'crypto': r'\b(0x[a-fA-F0-9]{40}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b',
+            'evidence_id': r'Evidence #(\d+)',
+        }
+        
+        for entity_type, pattern in patterns.items():
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                entity_id = f"{entity_type}:{match}"
+                if entity_id not in self.tracked_entities:
+                    self.tracked_entities[entity_id] = {
+                        'type': entity_type,
+                        'value': match,
+                        'mentions': 0,
+                        'first_seen': datetime.now().isoformat()
+                    }
+                self.tracked_entities[entity_id]['mentions'] += 1
+                self.tracked_entities[entity_id]['last_seen'] = datetime.now().isoformat()
+    
+    def get_context_summary(self, include_entities: bool = True) -> str:
+        """Generate a concise summary of conversation context"""
+        if not self.exchanges:
+            return ""
+        
+        summary_parts = []
+        
+        # Recent exchanges (last 5)
+        recent_exchanges = list(self.exchanges)[-5:]
+        summary_parts.append("**Recent Conversation:**")
+        for i, exchange in enumerate(recent_exchanges, 1):
+            summary_parts.append(f"{i}. Officer: {exchange['query'][:100]}")
+            summary_parts.append(f"   Assistant: {exchange['response'][:150]}...")
+        
+        # Frequently mentioned entities
+        if include_entities and self.tracked_entities:
+            frequent_entities = sorted(
+                self.tracked_entities.items(),
+                key=lambda x: x[1]['mentions'],
+                reverse=True
+            )[:5]
+            
+            if frequent_entities:
+                summary_parts.append("\n**Key Entities in Discussion:**")
+                for entity_id, data in frequent_entities:
+                    summary_parts.append(f"- {data['type']}: {data['value']} (mentioned {data['mentions']}x)")
+        
+        # Established facts (to avoid redundancy)
+        if self.established_facts:
+            summary_parts.append("\n**Established Facts (avoid repeating these):**")
+            for fact in list(self.established_facts)[:5]:  # Top 5 facts
+                summary_parts.append(f"- {fact[:100]}")
+        
+        return "\n".join(summary_parts)
+    
+    def should_offer_proactive_summary(self) -> bool:
+        """Check if we should offer a proactive summary to the officer"""
+        # Offer summary after 5+ queries or when many entities have been tracked
+        return (self.query_count >= 5 and self.query_count % 5 == 0) or \
+               (len(self.tracked_entities) >= 10)
+    
+    def get_proactive_summary_suggestion(self) -> str:
+        """Generate a proactive summary suggestion"""
+        entity_count = len(self.tracked_entities)
+        query_count = self.query_count
+        
+        suggestion = f"\n\n---\n\n**💡 Proactive Summary Suggestion**\n\n"
+        suggestion += f"After {query_count} queries, we've identified {entity_count} entities and uncovered several patterns. "
+        suggestion += "Would you like me to:\n\n"
+        suggestion += "1. **Generate a comprehensive timeline** of all activities?\n"
+        suggestion += "2. **Create a full network analysis** showing all connections?\n"
+        suggestion += "3. **Summarize key findings** in a report-ready format?\n"
+        suggestion += "4. **Continue with specific queries** (what would you like to investigate next?)\n\n"
+        suggestion += "*Just ask: \"Give me a full summary\" or continue with specific questions.*"
+        
+        return suggestion
+    
+    def get_conversation_history_for_prompt(self) -> List[Dict]:
+        """Format conversation history for LLM prompt"""
+        formatted_history = []
+        for exchange in self.exchanges:
+            formatted_history.append({
+                'role': 'user',
+                'content': exchange['query']
+            })
+            formatted_history.append({
+                'role': 'assistant',
+                'content': exchange['response'][:500]  # Truncate long responses
+            })
+        return formatted_history
+    
+    def estimate_token_count(self) -> int:
+        """Rough estimation of token count in conversation history"""
+        total_chars = sum(
+            len(ex['query']) + len(ex['response'][:500])
+            for ex in self.exchanges
+        )
+        # Rough estimate: 4 chars per token
+        return total_chars // 4
+    
+    def should_summarize(self) -> bool:
+        """Check if conversation should be summarized due to length"""
+        return self.estimate_token_count() > self.max_tokens * 0.8
+    
+    def update_conversation_state(self, focus: str):
+        """Update what the conversation is currently focusing on"""
+        self.conversation_state['current_focus'] = focus
+        self.conversation_state['updated_at'] = datetime.now().isoformat()
+    
+    def get_relevant_entities(self, query: str) -> List[Dict]:
+        """Get entities relevant to current query"""
+        query_lower = query.lower()
+        relevant = []
+        
+        for entity_id, data in self.tracked_entities.items():
+            if data['value'].lower() in query_lower:
+                relevant.append(data)
+        
+        return relevant
 
 
 class AIService:
@@ -20,6 +203,492 @@ class AIService:
         self.openai_key = settings.OPENAI_API_KEY
         self.use_gemini = bool(self.gemini_key)
         self.use_openai = bool(self.openai_key)
+        self.enable_agent_mode = True  # Enable ReAct agent framework
+        self.max_tool_iterations = 5  # Maximum tool calls per query
+    
+    def process_query_with_agent(
+        self,
+        query_text: str,
+        evidence_items: List[Dict[str, Any]],
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        case_id: str = None
+    ) -> Tuple[str, float, Optional[Dict]]:
+        """
+        Process query using ReAct agent framework with tool use
+        Returns: (summary, confidence, embedded_component)
+        """
+        if not self.use_gemini or not self.enable_agent_mode:
+            # Fallback to regular query processing
+            return self.process_natural_language_query(query_text, evidence_items, conversation_history) + (None,)
+        
+        try:
+            import requests
+            from .function_schemas import ALL_TOOL_SCHEMAS, detect_required_tools
+            from .tools import ToolRegistry
+            
+            print(f"[Agent Mode] Processing query: {query_text}")
+            
+            # Check if query is ambiguous and needs clarification
+            is_ambiguous, clarification_needed = self._check_query_ambiguity(query_text, evidence_items)
+            
+            if is_ambiguous and clarification_needed:
+                print(f"[Agent Mode] Query is ambiguous, proposing clarification")
+                clarification_response = self._propose_clarification(query_text, evidence_items)
+                confidence = 0.75
+                return clarification_response, confidence, None
+            
+            # Detect if tools are needed for this query
+            suggested_tools = detect_required_tools(query_text)
+            print(f"[Agent Mode] Suggested tools: {suggested_tools}")
+            
+            # Initialize tool registry
+            tool_registry = ToolRegistry(evidence_data=evidence_items, case_id=case_id)
+            
+            # Prepare evidence context
+            evidence_context = self._format_evidence_for_ai(evidence_items, max_items=30)
+            
+            # Build conversation context
+            conversation_context = self._build_conversation_context(conversation_history)
+            
+            # ReAct Loop: Reason -> Act -> Observe
+            agent_thoughts = []
+            tool_results = []
+            iterations = 0
+            embedded_component = None
+            
+            # Initial system prompt with tool instructions - IMPROVED
+            system_prompt = f"""You are an expert forensic AI assistant with access to specialized tools that can generate visualizations and analyze evidence.
+
+**YOUR MISSION:** Help the investigating officer by using tools to provide actionable insights.
+
+**AVAILABLE TOOLS (USE THESE!):**
+1. 🕸️ **generate_network_graph** - Creates actual network visualization JSON
+   - Use when: Officer asks "show network", "show connections", "relationships"
+   - Returns: JSON with nodes and edges that will be rendered as an interactive graph
+
+2. 📅 **generate_timeline** - Creates actual timeline visualization JSON
+   - Use when: Officer asks "timeline", "chronology", "when did", "sequence"
+   - Returns: JSON with events that will be rendered as an interactive timeline
+
+3. 🔍 **search_evidence** - Searches evidence with filters
+   - Use when: Officer asks "find", "search", "show me evidence about"
+   - Returns: Filtered list of evidence items
+
+4. 📊 **analyze_pattern** - Analyzes patterns in evidence
+   - Use when: Officer asks "what patterns", "frequency", "trends"
+   - Returns: Pattern analysis with findings
+
+5. 🏷️ **get_entity_details** - Gets details about specific entities
+   - Use when: Officer asks about a specific person, phone, or entity
+   - Returns: Detailed information and related evidence
+
+6. 📝 **format_report_section** - Formats content for reports
+   - Use when: Officer asks "create report", "summarize for report"
+   - Returns: Formatted report section
+
+**CRITICAL RULES:**
+- When officer asks for a VISUALIZATION (graph, timeline), you MUST call the appropriate tool
+- DO NOT describe what a graph would look like - GENERATE IT using the tool
+- After calling a tool, you will see its results and MUST present them clearly
+- Be specific: "I found X items" not "I searched for items"
+
+{conversation_context}
+
+**EVIDENCE AVAILABLE:**
+{evidence_context}
+
+**OFFICER'S QUESTION:** {query_text}
+
+Now decide: What tool(s) do you need to answer this question? If it's about visualization, USE THE TOOL - don't describe it in text."""
+            
+            # Call Gemini with function calling
+            response = requests.post(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                headers={
+                    'Content-Type': 'application/json',
+                    'X-goog-api-key': self.gemini_key
+                },
+                json={
+                    'contents': [{
+                        'parts': [{'text': system_prompt}]
+                    }],
+                    'tools': [{
+                        'function_declarations': ALL_TOOL_SCHEMAS
+                    }],
+                    'generationConfig': {
+                        'temperature': 0.4,  # Lower for more deterministic tool use
+                    }
+                },
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                print(f"[Agent Mode] API error: {response.status_code}")
+                return self.process_natural_language_query(query_text, evidence_items, conversation_history) + (None,)
+            
+            result = response.json()
+            
+            # Check if AI wants to use functions
+            if 'candidates' in result and len(result['candidates']) > 0:
+                candidate = result['candidates'][0]
+                content = candidate.get('content', {})
+                parts = content.get('parts', [])
+                
+                # Process function calls
+                for part in parts:
+                    if 'functionCall' in part:
+                        function_call = part['functionCall']
+                        tool_name = function_call.get('name')
+                        tool_args = function_call.get('args', {})
+                        
+                        print(f"[Agent Mode] Tool call: {tool_name} with args: {json.dumps(tool_args, indent=2)[:200]}")
+                        
+                        # Execute the tool
+                        tool_result = tool_registry.execute_tool(tool_name, tool_args)
+                        tool_results.append(tool_result)
+                        
+                        print(f"[Agent Mode] Tool result: success={tool_result.get('success')}")
+                        
+                        # If it's a visualization tool, prepare embedded component
+                        if tool_result.get('success'):
+                            result_data = tool_result.get('data', {})
+                            result_type = result_data.get('type')
+                            
+                            if result_type == 'network':
+                                embedded_component = {
+                                    'type': 'network',
+                                    'data': {
+                                        'nodes': result_data.get('nodes', []),
+                                        'links': result_data.get('edges', [])
+                                    }
+                                }
+                            elif result_type == 'timeline':
+                                embedded_component = {
+                                    'type': 'timeline',
+                                    'data': result_data.get('events', [])
+                                }
+                        
+                        iterations += 1
+                        if iterations >= self.max_tool_iterations:
+                            break
+                
+                # Now get the final response incorporating tool results
+                if tool_results:
+                    # Build follow-up prompt with tool results - ENFORCING COMPLETE LOOP
+                    tool_results_text = "\n\n**TOOL EXECUTION RESULTS:**\n"
+                    for i, tr in enumerate(tool_results, 1):
+                        if tr.get('success'):
+                            tool_results_text += f"\n{i}. ✅ **{tr['tool_name']}** succeeded:\n"
+                            tool_results_text += f"   - User message: {tr.get('user_message', 'Tool executed')}\n"
+                            tool_results_text += f"   - Data summary: {json.dumps(tr.get('data', {}), indent=2)[:800]}\n"
+                        else:
+                            tool_results_text += f"\n{i}. ❌ **{tr['tool_name']}** failed:\n"
+                            tool_results_text += f"   - Error: {tr.get('error')}\n"
+                            tool_results_text += f"   - User message: {tr.get('user_message', 'Tool failed')}\n"
+                    
+                    final_prompt = f"""{system_prompt}
+
+{tool_results_text}
+
+**CRITICAL: YOU MUST NOW SYNTHESIZE INSIGHTS, NOT JUST DESCRIBE ACTIONS**
+
+The tools have been executed. Your job is NOT to say "I ran a tool." Your job is to BE THE EXPERT ANALYST who interprets the results.
+
+You MUST now:
+1. **Find the "So What?"** - What do these results MEAN for the investigation?
+2. **Identify Meaningful Correlations** - Not "X has a phone number" but "X and Y are connected because they both appear in communications on the same day about the same topic"
+3. **Highlight Significant Patterns** - What's surprising, unusual, or important?
+4. **Provide Actionable Insights** - What should the officer investigate next based on these findings?
+5. **Use concrete evidence** - Reference specific Evidence IDs, names, dates, amounts
+
+**EXAMPLES OF GOOD VS BAD RESPONSES:**
+
+❌ BAD: "The graph shows Beijing Link is connected to phone number +86..."
+✅ GOOD: "Beijing Link appears in 5 communications with Shadow Trader between Mar 15-17, discussing financial transactions. This suggests an active business relationship during the investigation period."
+
+❌ BAD: "I found 10 messages."
+✅ GOOD: "10 messages show an escalating pattern: early messages discuss meeting locations, later ones reference 'package delivery' and crypto addresses. This suggests planning followed by execution."
+
+❌ BAD: "The network has 15 nodes and 23 connections."
+✅ GOOD: "The network reveals a hub-and-spoke pattern with 'Crypto Manager' at the center, connected to 8 other entities. This person appears to be coordinating the operation."
+
+**YOUR ANALYSIS STRUCTURE:**
+## 🔍 Key Findings
+[Most important discoveries - what matters most?]
+
+## 📊 Significant Patterns
+[Patterns, correlations, connections between different types of evidence]
+
+## ⚠️ Notable Observations
+[Anything suspicious, unusual, or worth investigating]
+
+## 🎯 Recommended Next Steps
+[What the officer should look into based on these findings]
+
+Now provide your INSIGHTFUL analysis (NOT just tool descriptions):"""
+                    
+                    # Call Gemini again for final response (without tools this time)
+                    final_response = requests.post(
+                        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                        headers={
+                            'Content-Type': 'application/json',
+                            'X-goog-api-key': self.gemini_key
+                        },
+                        json={
+                            'contents': [{
+                                'parts': [{'text': final_prompt}]
+                            }],
+                            'generationConfig': {
+                                'temperature': 0.7,
+                            }
+                        },
+                        timeout=20
+                    )
+                    
+                    if final_response.status_code == 200:
+                        final_result = final_response.json()
+                        if 'candidates' in final_result and len(final_result['candidates']) > 0:
+                            summary = final_result['candidates'][0]['content']['parts'][0]['text'].strip()
+                            
+                            # Add tool execution summary
+                            summary += f"\n\n---\n\n> **Agent Mode:** Used {len(tool_results)} tool(s) to generate this response."
+                            
+                            # Check if we should offer a proactive summary
+                            if hasattr(self, 'conversation_manager') and self.conversation_manager:
+                                if self.conversation_manager.should_offer_proactive_summary():
+                                    summary += self.conversation_manager.get_proactive_summary_suggestion()
+                            
+                            confidence = 0.9  # High confidence when tools are used successfully
+                            
+                            return summary, confidence, embedded_component
+                
+                # If no function calls or only text response
+                if parts and 'text' in parts[0]:
+                    summary = parts[0]['text'].strip()
+                    
+                    # Check if the response is trying to describe a visualization
+                    # If so, provide better guidance
+                    query_lower = query_text.lower()
+                    if any(word in query_lower for word in ['graph', 'network', 'timeline', 'visualiz']):
+                        if 'cannot generate' in summary.lower() or 'textual representation' in summary.lower():
+                            # AI tried to fallback to text - improve it
+                            summary = f"""## 🔍 Analysis Results
+
+I understand you're asking for a visualization. Let me provide what I found:
+
+{summary}
+
+---
+
+> **💡 Tip:** I can generate actual interactive visualizations! Try asking:
+> - "Generate a network graph" (for relationship visualization)
+> - "Create a timeline" (for chronological view)
+> 
+> The visualization will appear automatically if I have enough data to work with."""
+                    
+                    confidence, _ = self._calculate_confidence(summary, evidence_items)
+                    
+                    # Check if we should offer a proactive summary
+                    if hasattr(self, 'conversation_manager') and self.conversation_manager:
+                        if self.conversation_manager.should_offer_proactive_summary():
+                            summary += self.conversation_manager.get_proactive_summary_suggestion()
+                    
+                    return summary, confidence, embedded_component
+            
+            # Fallback if something went wrong
+            print("[Agent Mode] Falling back to regular query processing")
+            return self.process_natural_language_query(query_text, evidence_items, conversation_history) + (None,)
+            
+        except Exception as e:
+            print(f"[Agent Mode] Error: {e}")
+            import traceback
+            traceback.print_exc()
+            # Fallback to regular processing
+            return self.process_natural_language_query(query_text, evidence_items, conversation_history) + (None,)
+    
+    def _build_conversation_context(self, conversation_history: Optional[List[Dict[str, str]]]) -> str:
+        """Helper method to build conversation context string"""
+        if not conversation_history or len(conversation_history) == 0:
+            return ""
+        
+        context = "\n\n**PREVIOUS CONVERSATION:**\n"
+        for idx, exchange in enumerate(conversation_history[-5:], 1):
+            context += f"{idx}. Officer: {exchange.get('query', '')}\n"
+            context += f"   You: {exchange.get('response', '')[:200]}...\n"
+        
+        # Add established facts to avoid redundancy
+        if hasattr(self, 'conversation_manager') and self.conversation_manager:
+            if self.conversation_manager.established_facts:
+                context += "\n\n**ESTABLISHED FACTS (Avoid Repeating):**\n"
+                context += "*As we've discussed:*\n"
+                for fact in list(self.conversation_manager.established_facts)[:3]:  # Top 3
+                    context += f"- {fact[:100]}\n"
+                context += "\n*Build on these facts rather than repeating them.*\n"
+        
+        return context
+    
+    def _check_query_ambiguity(self, query_text: str, evidence_items: List[Dict]) -> Tuple[bool, bool]:
+        """
+        Check if query is ambiguous and needs clarification
+        Returns: (is_ambiguous, should_clarify)
+        """
+        query_lower = query_text.lower()
+        
+        # Broad/vague terms that indicate ambiguous queries
+        ambiguous_patterns = [
+            'analyze everything', 'analyze the whole', 'analyze all',
+            'find any', 'show me everything', 'tell me everything',
+            'what can you tell me', 'give me all', 'find correlation',
+            'analyze this file', 'analyze the file'
+        ]
+        
+        is_ambiguous = any(pattern in query_lower for pattern in ambiguous_patterns)
+        
+        # Check if query is very broad
+        if len(evidence_items) > 50 and len(query_text.split()) < 5:
+            is_ambiguous = True
+        
+        # Don't clarify if there's very little evidence (nothing to scope)
+        should_clarify = is_ambiguous and len(evidence_items) > 20
+        
+        return is_ambiguous, should_clarify
+    
+    def _propose_clarification(self, query_text: str, evidence_items: List[Dict]) -> str:
+        """
+        Propose a clarification plan for ambiguous queries
+        """
+        # Analyze what's in the evidence
+        evidence_types = {}
+        entity_types = set()
+        has_timestamps = False
+        
+        for item in evidence_items[:50]:  # Sample
+            e_type = item.get('type', 'evidence')
+            evidence_types[e_type] = evidence_types.get(e_type, 0) + 1
+            
+            if item.get('timestamp'):
+                has_timestamps = True
+            
+            for entity in item.get('entities', []):
+                entity_types.add(entity.get('type', ''))
+        
+        # Build clarification response
+        clarification = f"""## 🔍 Let's Focus Your Investigation
+
+I understand you want to "{query_text}". That's a broad request, so let me propose a structured approach to get you the most valuable insights.
+
+### 📊 What I Found in the Evidence
+
+I have **{len(evidence_items)} evidence items** to analyze:
+"""
+        
+        # List evidence types
+        if evidence_types:
+            clarification += "\n**Evidence Types:**\n"
+            for e_type, count in sorted(evidence_types.items(), key=lambda x: x[1], reverse=True):
+                clarification += f"- {e_type.capitalize()}: {count} items\n"
+        
+        # List entity types
+        if entity_types:
+            clarification += "\n**Key Entity Types:**\n"
+            for e_type in list(entity_types)[:5]:
+                clarification += f"- {e_type}\n"
+        
+        # Propose investigation plan
+        clarification += f"""
+
+### 🎯 Proposed Investigation Plan
+
+I suggest we break this down into focused steps:
+
+1. **First, identify key entities** - Who are the main people/organizations involved?
+2. **Then, analyze their connections** - How are they related? What communications exist?
+3. **Look for patterns** - Any unusual timing, locations, or financial activity?
+4. **Timeline analysis** - When did key events occur?
+
+### 💡 You Can Also Ask Specific Questions Like:
+
+- "Who are the most frequently mentioned entities?"
+- "Show me a network graph of connections"
+- "Find all financial transactions"
+- "What happened on [specific date]?"
+- "Show me communications between [person A] and [person B]"
+
+**Would you like me to start with step 1 (identifying key entities), or would you prefer to ask a more specific question?**
+"""
+        
+        return clarification
+    
+    def _select_relevant_evidence(self, ai_response: str, all_evidence: List[Dict], limit: int = 10) -> List[Dict]:
+        """
+        Dynamically select the most relevant evidence items based on what the AI actually mentioned
+        in its response. Makes the returned evidence contextual and meaningful.
+        """
+        # Extract entity mentions from AI response
+        response_lower = ai_response.lower()
+        mentioned_entities = set()
+        mentioned_ids = set()
+        
+        # Extract evidence IDs explicitly mentioned (e.g., "Evidence #123")
+        import re
+        id_pattern = r'evidence\s*#?(\d+)'
+        for match in re.finditer(id_pattern, response_lower):
+            mentioned_ids.add(match.group(1))
+        
+        # Extract entity values mentioned in response
+        for item in all_evidence:
+            for entity in item.get('entities', []):
+                e_value = entity.get('value', '')
+                if e_value and len(e_value) > 3 and e_value.lower() in response_lower:
+                    mentioned_entities.add(e_value.lower())
+        
+        # Score each evidence item by relevance
+        scored_evidence = []
+        for item in all_evidence:
+            score = 0
+            
+            # High priority: explicitly mentioned by ID
+            if str(item.get('id', '')) in mentioned_ids:
+                score += 100
+            
+            # High priority: contains mentioned entities
+            for entity in item.get('entities', []):
+                e_value = entity.get('value', '').lower()
+                if e_value in mentioned_entities:
+                    score += 50
+            
+            # Medium priority: content keywords match AI response
+            content = item.get('content', '').lower()
+            content_words = set(content.split())
+            response_words = set(response_lower.split())
+            
+            # Find significant overlapping words (not common words)
+            common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+            significant_overlap = content_words.intersection(response_words) - common_words
+            score += len(significant_overlap) * 2
+            
+            # Low priority: recency/type
+            if item.get('timestamp'):
+                score += 1
+            
+            scored_evidence.append((score, item))
+        
+        # Sort by score descending
+        scored_evidence.sort(key=lambda x: x[0], reverse=True)
+        
+        # If we have high-scoring items (score > 10), prioritize those
+        high_score_items = [item for score, item in scored_evidence if score > 10]
+        
+        if high_score_items:
+            # Return high-scoring items first, then fill with others
+            result = high_score_items[:limit]
+            if len(result) < limit:
+                remaining = [item for score, item in scored_evidence if score <= 10]
+                result.extend(remaining[:limit - len(result)])
+            return result
+        else:
+            # No high-scoring items, return top scorers
+            return [item for score, item in scored_evidence[:limit]]
     
     def process_natural_language_query(
         self, 
@@ -69,23 +738,52 @@ class AIService:
         return result
     
     def _query_gemini(self, query_text: str, evidence_items: List[Dict], conversation_history: Optional[List[Dict[str, str]]] = None) -> Tuple[str, float]:
-        """Query using Google Gemini API with conversation context"""
+        """Query using Google Gemini API with enhanced conversation context"""
         try:
             import requests
             
             # Prepare evidence context
             evidence_context = self._format_evidence_for_ai(evidence_items)
             
-            # Build conversation context if available
+            # Build enhanced conversation context with entity tracking
             conversation_context = ""
+            tracked_entities_summary = ""
+            
             if conversation_history and len(conversation_history) > 0:
-                conversation_context = "\n\n**PREVIOUS CONVERSATION:**\n"
-                for exchange in conversation_history[-5:]:  # Last 5 exchanges
-                    conversation_context += f"\nOfficer: {exchange.get('query', '')}"
-                    conversation_context += f"\nAssistant: {exchange.get('response', '')[:200]}...\n"
-                conversation_context += "\n**CURRENT QUESTION:**\n"
+                conversation_context = "\n\n**PREVIOUS CONVERSATION CONTEXT:**\n"
+                conversation_context += "The officer and you have been discussing this case. Here's what was covered:\n\n"
+                
+                # Format recent exchanges with better structure
+                for idx, exchange in enumerate(conversation_history[-5:], 1):
+                    query = exchange.get('query', '')
+                    response = exchange.get('response', '')[:300]  # More context
+                    conversation_context += f"**Exchange {idx}:**\n"
+                    conversation_context += f"- Officer asked: \"{query}\"\n"
+                    conversation_context += f"- You responded: \"{response}...\"\n\n"
+                
+                # Extract key entities from conversation history
+                all_text = " ".join([ex.get('query', '') + " " + ex.get('response', '') for ex in conversation_history[-3:]])
+                
+                # Track important mentions
+                crypto_addrs = re.findall(r'\b(0x[a-fA-F0-9]{40}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})\b', all_text)
+                phone_nums = re.findall(r'\+?\d{10,15}', all_text)
+                evidence_refs = re.findall(r'Evidence #(\d+)', all_text)
+                
+                if crypto_addrs or phone_nums or evidence_refs:
+                    tracked_entities_summary = "\n**Entities You've Been Tracking:**\n"
+                    if crypto_addrs:
+                        tracked_entities_summary += f"- Crypto addresses: {', '.join(set(crypto_addrs[:3]))}\n"
+                    if phone_nums:
+                        tracked_entities_summary += f"- Phone numbers: {', '.join(set(phone_nums[:3]))}\n"
+                    if evidence_refs:
+                        tracked_entities_summary += f"- Evidence items: {', '.join(set(evidence_refs[:5]))}\n"
+                
+                conversation_context += tracked_entities_summary
+                conversation_context += "\n**CURRENT QUESTION (use the context above to inform your answer):**\n"
             
             prompt = f"""You are an expert digital forensics AI assistant helping an investigating officer analyze evidence from a UFDR (Universal Forensic Data Report).
+
+**CRITICAL INSTRUCTION:** If the officer's question references previous parts of the conversation (e.g., "those connections", "that address", "the person we discussed"), use the conversation context above to understand what they're referring to. DO NOT ask them to repeat information.
 {conversation_context}
 The officer has asked: "{query_text}"
 
@@ -251,16 +949,28 @@ Structure it like a professional forensic analysis report with clear visual hier
             return self._fallback_query(query_text, evidence_items)
     
     def _fallback_query(self, query_text: str, evidence_items: List[Dict]) -> Tuple[str, float]:
-        """Fallback method when AI APIs are not available"""
+        """
+        Fallback method when AI APIs are not available
+        IMPROVED: Provides more insightful analysis instead of dry lists
+        """
         # Extract key terms from query
         key_terms = self._extract_keywords(query_text.lower())
         
-        # Categorize evidence
+        # Categorize evidence with relevance scoring
         relevant_items = []
         for item in evidence_items:
             content_lower = item.get('content', '').lower()
-            if any(term in content_lower for term in key_terms):
-                relevant_items.append(item)
+            source_lower = item.get('source', '').lower()
+            
+            # Calculate relevance score
+            relevance = sum(1 for term in key_terms if term in content_lower or term in source_lower)
+            
+            if relevance > 0:
+                relevant_items.append((item, relevance))
+        
+        # Sort by relevance
+        relevant_items.sort(key=lambda x: x[1], reverse=True)
+        relevant_items = [item for item, _ in relevant_items]
         
         # Generate summary
         if not relevant_items:
@@ -840,7 +1550,10 @@ Search terms:"""
         return keywords
     
     def _generate_fallback_summary(self, query: str, items: List[Dict]) -> str:
-        """Generate a basic summary without AI using Markdown formatting"""
+        """
+        Generate an insightful summary without AI using Markdown formatting
+        IMPROVED: Provides narrative analysis instead of dry lists
+        """
         summary_parts = [
             f"## 🔍 Analysis Results\n",
             f"**Query:** `{query}`\n",
@@ -848,24 +1561,67 @@ Search terms:"""
             f"\n---\n"
         ]
         
-        # Group by type
+        # Group by type and collect stats
         by_type = {}
-        for item in items[:10]:  # Limit to 10 items
+        by_source = {}
+        by_device = {}
+        timestamps = []
+        
+        for item in items:
             item_type = item.get('type', 'unknown')
+            source = item.get('source', 'Unknown')
+            device = item.get('device', 'Unknown')
+            
             if item_type not in by_type:
                 by_type[item_type] = []
             by_type[item_type].append(item)
         
-        summary_parts.append("### 📋 Evidence Summary\n")
+            by_source[source] = by_source.get(source, 0) + 1
+            by_device[device] = by_device.get(device, 0) + 1
+            
+            if item.get('timestamp'):
+                timestamps.append(item.get('timestamp'))
         
-        for item_type, type_items in by_type.items():
-            summary_parts.append(f"#### {item_type.capitalize()} Evidence ({len(type_items)} items)\n")
-            for item in type_items[:3]:
-                content = item.get('content', '')[:100]
-                source = item.get('source', 'Unknown')
-                item_id = item.get('id', 'N/A')
-                summary_parts.append(f"- **{source}**: {content}{'...' if len(item.get('content', '')) > 100 else ''}")
-                summary_parts.append(f"  - *Evidence ID:* `{item_id}`\n")
+        # Generate narrative summary
+        summary_parts.append("### 📊 Key Findings\n\n")
+        
+        # Type distribution
+        if by_type:
+            summary_parts.append(f"The evidence consists of **{len(by_type)} different types** of data:\n")
+            for item_type, type_items in sorted(by_type.items(), key=lambda x: len(x[1]), reverse=True):
+                percentage = (len(type_items) / len(items)) * 100
+                summary_parts.append(f"- **{item_type.capitalize()}**: {len(type_items)} items ({percentage:.0f}%)\n")
+            summary_parts.append("\n")
+        
+        # Temporal insights
+        if timestamps:
+            timestamps.sort()
+            summary_parts.append(f"**Time Range:** From `{timestamps[0]}` to `{timestamps[-1]}`\n\n")
+        
+        # Top sources
+        if by_source and len(by_source) > 1:
+            top_sources = sorted(by_source.items(), key=lambda x: x[1], reverse=True)[:3]
+            summary_parts.append("**Most Active Sources:**\n")
+            for source, count in top_sources:
+                if source != 'Unknown':
+                    summary_parts.append(f"- {source}: {count} items\n")
+            summary_parts.append("\n")
+        
+        summary_parts.append("### 📝 Sample Evidence\n\n")
+        
+        # Show representative samples from each type
+        for item_type, type_items in list(by_type.items())[:3]:
+            if type_items:
+                sample = type_items[0]
+                content = sample.get('content', '')[:150]
+                source = sample.get('source', 'Unknown')
+                item_id = sample.get('id', 'N/A')
+                timestamp = sample.get('timestamp', 'No timestamp')
+                
+                summary_parts.append(f"**Example {item_type.capitalize()}** (Evidence #{item_id}):\n")
+                summary_parts.append(f"- Source: {source}\n")
+                summary_parts.append(f"- Time: {timestamp}\n")
+                summary_parts.append(f"- Content: \"{content}{'...' if len(sample.get('content', '')) > 150 else ''}\"\n\n")
         
         if len(items) > 10:
             summary_parts.append(f"> **Note:** Showing top 10 results. {len(items) - 10} additional items found.\n")
