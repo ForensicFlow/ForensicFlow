@@ -17,6 +17,7 @@ import MiniTimeline from './MiniTimeline';
 import ChatBubbleView from './ChatBubbleView';
 import MiniMap from './MiniMap';
 import MarkdownRenderer from './MarkdownRenderer';
+import NetworkGraph from './NetworkGraph';
 
 interface ChatMessage {
   id: string;
@@ -105,6 +106,9 @@ What would you like to investigate?`,
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Network graph state - track per message
+  const [networkGraphStates, setNetworkGraphStates] = useState<Record<string, { showGraph: boolean; isFullScreen: boolean }>>({});
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -672,20 +676,60 @@ ${fallbackSummary}
   };
 
   const handleAction = (action: ChatAction) => {
-    switch (action.type) {
-      case 'download':
-        // TODO: Implement download functionality
-        alert('Download feature coming soon!');
-        break;
-      case 'timeline':
-        onShowTimeline?.();
-        break;
-      case 'network':
-        onShowNetwork?.();
-        break;
-      case 'evidence':
-        onShowEvidence?.(action.data);
-        break;
+    console.log('handleAction called with:', action);
+    
+    try {
+      switch (action.type) {
+        case 'download':
+          console.log('Download action triggered');
+          // Download evidence report
+          success('Preparing download...');
+          // TODO: Implement actual download functionality
+          setTimeout(() => {
+            alert('Download feature: This would download the evidence report with 758 items');
+          }, 100);
+          break;
+          
+        case 'timeline':
+          console.log('Timeline action triggered');
+          success('Opening timeline view...');
+          if (onShowTimeline) {
+            onShowTimeline();
+          } else {
+            console.warn('onShowTimeline callback not provided');
+            alert('Timeline view not available - callback missing');
+          }
+          break;
+          
+        case 'network':
+          console.log('Network action triggered');
+          success('Opening network graph...');
+          if (onShowNetwork) {
+            onShowNetwork();
+          } else {
+            console.warn('onShowNetwork callback not provided');
+            alert('Network view not available - callback missing');
+          }
+          break;
+          
+        case 'evidence':
+          console.log('Evidence action triggered with data:', action.data);
+          success('Loading evidence...');
+          if (onShowEvidence) {
+            onShowEvidence(action.data);
+          } else {
+            console.warn('onShowEvidence callback not provided');
+            alert('Evidence view not available - callback missing');
+          }
+          break;
+          
+        default:
+          console.warn('Unknown action type:', action.type);
+          error('Unknown action type');
+      }
+    } catch (err) {
+      console.error('Error handling action:', err);
+      error('Failed to perform action');
     }
   };
 
@@ -1099,12 +1143,76 @@ ${fallbackSummary}
                   </div>
                 )}
 
-                {/* Pin to Report Button - Only for bot responses */}
-                {message.type === 'bot' && message.id !== '1' && !message.loading && (
+                {/* Quick Action Buttons - Enhanced */}
+                {message.type === 'bot' && message.id !== '1' && !message.loading && message.evidence && message.evidence.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-700/50">
+                    <p className="text-xs font-medium text-slate-400 mb-2">Quick Actions:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {/* Find Related Evidence */}
+                      <button
+                        onClick={() => {
+                          const messageIndex = messages.findIndex(m => m.id === message.id);
+                          const userQuery = messageIndex > 0 && messages[messageIndex - 1].type === 'user' 
+                            ? messages[messageIndex - 1].content 
+                            : '';
+                          if (userQuery) {
+                            setInputValue(`Find evidence related to: ${userQuery}`);
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/70 text-slate-200 text-xs rounded-lg transition-all border border-slate-600 hover:border-cyan-500"
+                        title="Find related evidence"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        🕵️ Find Related
+                      </button>
+                      
+                      {/* Open in Timeline */}
+                      <button
+                        onClick={() => {
+                          if (message.evidence && message.evidence.length > 0 && onHighlightEvidence) {
+                            onHighlightEvidence(message.evidence[0].id);
+                          }
+                          if (onShowTimeline) {
+                            onShowTimeline();
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-600/70 text-slate-200 text-xs rounded-lg transition-all border border-slate-600 hover:border-cyan-500"
+                        title="View in timeline"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        🧭 Timeline
+                      </button>
+                      
+                      {/* Add to Report */}
+                      <button
+                        onClick={() => {
+                          const messageIndex = messages.findIndex(m => m.id === message.id);
+                          const userQuery = messageIndex > 0 && messages[messageIndex - 1].type === 'user' 
+                            ? messages[messageIndex - 1].content 
+                            : 'AI Analysis';
+                          handlePinResponse(message, userQuery);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-900/40 to-purple-900/40 hover:from-cyan-800/60 hover:to-purple-800/60 text-cyan-300 hover:text-cyan-200 text-xs rounded-lg transition-all border border-cyan-700/30 hover:border-cyan-500/50"
+                        title="Pin this analysis to your report"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        📌 Add to Report
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Pin to Report Button (for messages without evidence) */}
+                {message.type === 'bot' && message.id !== '1' && !message.loading && (!message.evidence || message.evidence.length === 0) && (
                   <div className="mt-4 pt-3 border-t border-slate-700/50">
                     <button
                       onClick={() => {
-                        // Find the corresponding user query
                         const messageIndex = messages.findIndex(m => m.id === message.id);
                         const userQuery = messageIndex > 0 && messages[messageIndex - 1].type === 'user' 
                           ? messages[messageIndex - 1].content 
@@ -1128,8 +1236,14 @@ ${fallbackSummary}
                     {message.actions.map((action, index) => (
                       <button
                         key={index}
-                        onClick={() => handleAction(action)}
-                        className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Action button clicked:', action);
+                          handleAction(action);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors cursor-pointer active:scale-95 hover:shadow-lg"
+                        type="button"
                       >
                         {action.type === 'download' && <DocumentDownloadIcon className="h-4 w-4" />}
                         {action.type === 'timeline' && <ClockIcon className="h-4 w-4" />}
@@ -1164,6 +1278,65 @@ ${fallbackSummary}
                         messages={message.embedded_component.data}
                         height={400}
                       />
+                    )}
+                    
+                    {message.embedded_component.type === 'network' && (
+                      <div className="space-y-3">
+                        {/* Toggle Button */}
+                        <button
+                          onClick={() => {
+                            setNetworkGraphStates(prev => ({
+                              ...prev,
+                              [message.id]: {
+                                showGraph: !prev[message.id]?.showGraph,
+                                isFullScreen: false
+                              }
+                            }));
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg transition-all shadow-lg"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          {networkGraphStates[message.id]?.showGraph ? 'Hide Relationship Graph' : '🔗 View Relationship Graph'}
+                        </button>
+                        
+                        {/* Inline Network Graph */}
+                        {networkGraphStates[message.id]?.showGraph && !networkGraphStates[message.id]?.isFullScreen && (
+                          <NetworkGraph
+                            graphData={message.embedded_component.data}
+                            height={400}
+                            caseId={caseId}
+                            onExpand={() => {
+                              setNetworkGraphStates(prev => ({
+                                ...prev,
+                                [message.id]: {
+                                  ...prev[message.id],
+                                  isFullScreen: true
+                                }
+                              }));
+                            }}
+                          />
+                        )}
+                        
+                        {/* Full-Screen Network Graph */}
+                        {networkGraphStates[message.id]?.isFullScreen && (
+                          <NetworkGraph
+                            graphData={message.embedded_component.data}
+                            isFullScreen={true}
+                            caseId={caseId}
+                            onClose={() => {
+                              setNetworkGraphStates(prev => ({
+                                ...prev,
+                                [message.id]: {
+                                  ...prev[message.id],
+                                  isFullScreen: false
+                                }
+                              }));
+                            }}
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

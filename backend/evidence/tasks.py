@@ -5,9 +5,69 @@ from celery import shared_task
 from django.core.files.storage import default_storage
 from .ufdr_parser import UFDRParser
 from .models import Evidence, Entity
+from .file_validator import FileValidator
 from cases.models import CaseFile
 import hashlib
 import os
+
+
+@shared_task
+def validate_and_process_file(case_file_id):
+    """
+    Validate and process a file asynchronously
+    This task handles validation first, then triggers processing
+    """
+    case_file = None
+    try:
+        case_file = CaseFile.objects.get(id=case_file_id)
+        case_file.processing_status = 'validating'
+        case_file.save()
+        
+        # Get the file path
+        file_path = case_file.file.path
+        original_filename = case_file.original_filename
+        
+        # Validate the uploaded file
+        is_valid, error_message = FileValidator.validate_file(file_path, original_filename)
+        
+        if not is_valid:
+            # Mark as failed and delete the file
+            case_file.processing_status = f'failed: {error_message[:200]}'
+            case_file.save()
+            # Optionally delete the invalid file
+            try:
+                case_file.file.delete()
+            except:
+                pass
+            return f"Validation failed for {original_filename}: {error_message}"
+        
+        # Get file info
+        file_info = FileValidator.get_file_info(file_path)
+        
+        # If it's a UFDR file, process it
+        if case_file.file_type == 'UFDR':
+            # Trigger UFDR processing
+            return process_ufdr_file(case_file_id)
+        else:
+            # For non-UFDR files, just mark as completed
+            case_file.processed = True
+            case_file.processing_status = 'completed'
+            case_file.save()
+            return f"File {original_filename} validated and stored successfully"
+            
+    except CaseFile.DoesNotExist:
+        error_msg = f"CaseFile with id {case_file_id} not found"
+        print(error_msg)
+        return error_msg
+    except Exception as e:
+        import traceback
+        error_msg = f'Validation failed: {str(e)}'
+        print(f"Exception in validate_and_process_file: {error_msg}")
+        print(f"Full traceback:\n{traceback.format_exc()}")
+        if case_file:
+            case_file.processing_status = f'failed: {error_msg[:200]}'
+            case_file.save()
+        return error_msg
 
 
 @shared_task
@@ -28,7 +88,11 @@ def process_ufdr_file(case_file_id):
         parser = UFDRParser(file_path)
         evidence_items = parser.parse()
         
-        # Create Evidence objects
+        # Create Evidence objects using bulk operations for better performance
+        evidence_to_create = []
+        entities_to_create = []
+        evidence_map = {}  # Map of evidence_id to evidence object
+        
         for idx, item_data in enumerate(evidence_items):
             # Generate stable ID using critical fields only
             timestamp = item_data.get('timestamp', '')
@@ -47,27 +111,41 @@ def process_ufdr_file(case_file_id):
             # Extract device info
             device = item_data.pop('device', case_file.original_filename)
             
-            # Create Evidence (skip if already exists)
-            evidence, created = Evidence.objects.get_or_create(
-                id=evidence_id,
-                defaults={
-                    'case': case_file.case,
-                    'device': device,
-                    'latitude': latitude,
-                    'longitude': longitude,
+            # Check if evidence already exists
+            try:
+                existing_evidence = Evidence.objects.get(id=evidence_id)
+                # Skip if already exists
+                continue
+            except Evidence.DoesNotExist:
+                # Create new evidence object (but don't save yet)
+                evidence = Evidence(
+                    id=evidence_id,
+                    case=case_file.case,
+                    device=device,
+                    latitude=latitude,
+                    longitude=longitude,
                     **item_data
-                }
-            )
+                )
+                evidence_to_create.append(evidence)
+                evidence_map[evidence_id] = (evidence, entities_data)
+        
+        # Bulk create all evidence at once (much faster than one-by-one)
+        if evidence_to_create:
+            Evidence.objects.bulk_create(evidence_to_create, ignore_conflicts=True)
             
-            # Create Entities only if evidence was newly created
-            if created:
+            # Now create entities for the newly created evidence
+            for evidence_id, (evidence, entities_data) in evidence_map.items():
                 for entity_data in entities_data:
-                    Entity.objects.create(
+                    entities_to_create.append(Entity(
                         evidence=evidence,
                         entity_type=entity_data.get('type', 'Unknown'),
                         value=entity_data.get('value', ''),
                         confidence=entity_data.get('confidence', 1.0)
-                    )
+                    ))
+            
+            # Bulk create all entities at once
+            if entities_to_create:
+                Entity.objects.bulk_create(entities_to_create, batch_size=1000)
         
         # Mark as processed
         case_file.processed = True
@@ -134,4 +212,19 @@ def analyze_entity_connections(case_id):
                     connection.evidence_items.add(evidence)
     
     return f"Analyzed connections for {len(entity_map)} unique entities"
+
+
+@shared_task
+def process_multiple_files(case_file_ids):
+    """
+    Process multiple files concurrently
+    This allows batch uploads to be processed in parallel
+    """
+    from celery import group
+    
+    # Create a group of tasks to process files in parallel
+    job = group([validate_and_process_file.s(file_id) for file_id in case_file_ids])
+    result = job.apply_async()
+    
+    return f"Processing {len(case_file_ids)} files in parallel"
 

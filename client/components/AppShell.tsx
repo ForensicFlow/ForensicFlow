@@ -169,6 +169,7 @@ const AppShell: React.FC = () => {
                   caseId={selectedCaseId}
                   onBack={handleBackFromCase}
                   activeTab={activeCaseTab}
+                  onTabChange={setActiveCaseTab}
                 />
               ) : (
                 <Navigate to="/app/cases" replace />

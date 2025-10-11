@@ -17,6 +17,7 @@ interface CaseDetailViewProps {
   caseId: string;
   onBack: () => void;
   activeTab: CaseTabView;
+  onTabChange?: (tab: CaseTabView) => void;
 }
 
 // Helper function to safely display numbers
@@ -25,7 +26,7 @@ const safeNumber = (value: any, fallback: number = 0): number => {
   return isNaN(num) ? fallback : num;
 };
 
-const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeTab }) => {
+const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeTab, onTabChange }) => {
   const [caseData, setCaseData] = useState<any>(null);
   const [evidence, setEvidence] = useState<EvidenceSnippet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -329,19 +330,36 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
               <div className="flex-1 overflow-hidden">
           <FlowBot 
             caseId={caseId}
-                onShowTimeline={() => {}}
-                onShowNetwork={() => {}}
-                onShowEvidence={(evidence) => {}}
+                onShowTimeline={() => {
+                  console.log('FlowBot: Switching to Timeline tab');
+                  onTabChange?.(CaseTabView.TIMELINE);
+                }}
+                onShowNetwork={() => {
+                  console.log('FlowBot: Switching to Network tab');
+                  onTabChange?.(CaseTabView.NETWORK);
+                }}
+                onShowEvidence={(evidenceList) => {
+                  console.log('FlowBot: Switching to Evidence tab');
+                  onTabChange?.(CaseTabView.EVIDENCE);
+                  // If specific evidence provided, select first one
+                  if (evidenceList && evidenceList.length > 0) {
+                    setSelectedSnippet(evidenceList[0]);
+                  }
+                }}
             onHighlightEvidence={(evidenceId) => {
+              console.log('FlowBot: Highlighting evidence:', evidenceId);
               const evidenceItem = evidence.find(e => e.id === evidenceId || e.id === `EV${evidenceId}`);
               if (evidenceItem) {
                 setSelectedSnippet(evidenceItem);
+                // Switch to evidence tab first
+                onTabChange?.(CaseTabView.EVIDENCE);
+                // Then scroll to element after a short delay
                 setTimeout(() => {
                   const element = document.getElementById(`evidence-${evidenceId}`);
                   if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
-                }, 100);
+                }, 300);
               }
             }}
                   onHypothesisModeChange={(isActive) => {

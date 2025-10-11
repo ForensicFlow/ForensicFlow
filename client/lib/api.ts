@@ -170,6 +170,36 @@ export const casesApi = {
       body: formData,
     });
   },
+  uploadFiles: (caseId: string, files: File[], fileType: string = 'UFDR') => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files[]', file);
+    });
+    formData.append('file_type', fileType);
+
+    return apiCall<{
+      message: string;
+      uploaded_files: Array<{
+        id: number;
+        filename: string;
+        status: string;
+        message: string;
+      }>;
+      total_uploaded: number;
+      total_failed: number;
+      errors?: Array<{
+        filename: string;
+        error: string;
+      }>;
+    }>(`/cases/${caseId}/upload_file/`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+  getFileStatus: (caseId: string, fileId?: number) => {
+    const query = fileId ? `?file_id=${fileId}` : '';
+    return apiCall<any>(`/cases/${caseId}/file_status/${query}`);
+  },
   getEvidence: (caseId: string) => apiCall<any[]>(`/cases/${caseId}/evidence/`),
   stats: () => apiCall<any>('/cases/stats/'),
   

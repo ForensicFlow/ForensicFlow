@@ -216,8 +216,14 @@ class CaseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_file(self, request, pk=None):
         """
-        Upload a UFDR or other file to a case with validation
+        Upload one or multiple files to a case with async validation and processing
         User must be assigned to the case
+        
+        Supports:
+        - Single file: 'file' field
+        - Multiple files: 'files[]' field (multiple files with same key)
+        
+        Returns immediately after saving files - processing happens in background
         """
         case = self.get_object()
         
@@ -228,76 +234,89 @@ class CaseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        file_obj = request.FILES.get('file')
+        # Handle both single and multiple file uploads
+        files = request.FILES.getlist('files[]') or request.FILES.getlist('files')
         
-        if not file_obj:
+        # Fallback to single file if no multiple files
+        if not files:
+            single_file = request.FILES.get('file')
+            if single_file:
+                files = [single_file]
+        
+        if not files:
             return Response(
-                {'error': 'No file provided'},
+                {'error': 'No files provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Sanitize filename
-        original_filename = FileValidator.sanitize_filename(file_obj.name)
-        
-        # Determine file type
+        # Determine file type (same for all files in batch)
         file_type = request.data.get('file_type', 'UFDR')
-        
-        # Record uploader
         uploaded_by = request.user
         
-        # Create CaseFile entry (save temporarily for validation)
-        case_file = CaseFile.objects.create(
-            case=case,
-            file=file_obj,
-            file_type=file_type,
-            original_filename=original_filename,
-            uploaded_by=uploaded_by
-        )
+        # Process all files
+        uploaded_files = []
+        errors = []
         
-        # Validate the uploaded file
-        file_path = case_file.file.path
-        is_valid, error_message = FileValidator.validate_file(file_path, original_filename)
-        
-        if not is_valid:
-            # Delete the invalid file
-            case_file.delete()
-            return Response(
-                {
-                    'error': 'File validation failed',
-                    'detail': error_message
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Get file info
-        file_info = FileValidator.get_file_info(file_path)
-        case_file.processing_status = f"validated: {file_info.get('size_mb', 0)}MB"
-        case_file.save()
-        
-        # Process UFDR files
-        if file_type == 'UFDR':
+        for file_obj in files:
             try:
-                # Try async processing with Celery first
-                process_ufdr_file.delay(case_file.id)
-            except Exception as e:
-                # If Celery is not available, process synchronously
-                print(f"Celery not available, processing synchronously: {e}")
-                import traceback
+                # Sanitize filename
+                original_filename = FileValidator.sanitize_filename(file_obj.name)
+                
+                # Create CaseFile entry immediately (no blocking validation)
+                case_file = CaseFile.objects.create(
+                    case=case,
+                    file=file_obj,
+                    file_type=file_type,
+                    original_filename=original_filename,
+                    uploaded_by=uploaded_by,
+                    processing_status='uploaded'  # Initial status
+                )
+                
+                # Trigger async validation and processing
+                from evidence.tasks import validate_and_process_file
                 try:
-                    from evidence.tasks import process_ufdr_file as sync_process
-                    # Call the function directly (synchronously)
-                    result = sync_process(case_file.id)
-                    print(f"Sync processing result: {result}")
-                except Exception as sync_error:
-                    error_trace = traceback.format_exc()
-                    print(f"Error in sync processing: {sync_error}")
-                    print(f"Full traceback:\n{error_trace}")
-                    # Store detailed error in processing status
-                    case_file.processing_status = f'failed: {str(sync_error)[:200]}'
-                    case_file.save()
+                    # Try async first (if Celery is running)
+                    validate_and_process_file.delay(case_file.id)
+                    print(f"✅ Queued for async processing: {original_filename}")
+                except Exception as e:
+                    # If Celery not available, process synchronously
+                    print(f"⚠️  Celery not available, processing synchronously: {e}")
+                    try:
+                        # Call function directly (without .delay) for immediate processing
+                        result = validate_and_process_file(case_file.id)
+                        print(f"✅ Processed synchronously: {result}")
+                    except Exception as sync_error:
+                        print(f"❌ Sync processing failed: {sync_error}")
+                        import traceback
+                        traceback.print_exc()
+                        case_file.processing_status = f'failed: {str(sync_error)[:200]}'
+                        case_file.save()
+                
+                uploaded_files.append({
+                    'id': case_file.id,
+                    'filename': original_filename,
+                    'status': 'uploaded',
+                    'message': 'File uploaded successfully, processing in background'
+                })
+                
+            except Exception as e:
+                errors.append({
+                    'filename': file_obj.name,
+                    'error': str(e)
+                })
         
-        serializer = CaseFileSerializer(case_file)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Return immediately with upload status
+        response_data = {
+            'message': f'Successfully uploaded {len(uploaded_files)} file(s)',
+            'uploaded_files': uploaded_files,
+            'total_uploaded': len(uploaded_files),
+            'total_failed': len(errors)
+        }
+        
+        if errors:
+            response_data['errors'] = errors
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['get'])
     def evidence(self, request, pk=None):
@@ -311,6 +330,54 @@ class CaseViewSet(viewsets.ModelViewSet):
         from evidence.serializers import EvidenceSerializer
         serializer = EvidenceSerializer(evidence_items, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def file_status(self, request, pk=None):
+        """
+        Get processing status of uploaded files for a case
+        Returns status of all files or specific file by ID
+        """
+        case = self.get_object()
+        
+        # Verify case access
+        if not case.investigators.filter(id=request.user.id).exists():
+            return Response(
+                {'error': 'You do not have permission to view this case'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get specific file ID if provided
+        file_id = request.query_params.get('file_id')
+        
+        if file_id:
+            try:
+                case_file = CaseFile.objects.get(id=file_id, case=case)
+                serializer = CaseFileSerializer(case_file)
+                return Response(serializer.data)
+            except CaseFile.DoesNotExist:
+                return Response(
+                    {'error': 'File not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Get all files for the case
+        files = CaseFile.objects.filter(case=case).order_by('-uploaded_at')
+        serializer = CaseFileSerializer(files, many=True)
+        
+        # Group by status
+        status_summary = {
+            'total': files.count(),
+            'uploaded': files.filter(processing_status='uploaded').count(),
+            'validating': files.filter(processing_status='validating').count(),
+            'processing': files.filter(processing_status='processing').count(),
+            'completed': files.filter(processed=True, processing_status='completed').count(),
+            'failed': files.filter(processing_status__startswith='failed').count(),
+        }
+        
+        return Response({
+            'files': serializer.data,
+            'summary': status_summary
+        })
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -332,4 +399,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             'closed': closed_cases,
             'archived': archived_cases
         })
+
+
+
 
