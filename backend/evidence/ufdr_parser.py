@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import hashlib
 import os
+from django.utils import timezone
 
 # Optional imports for extended format support
 try:
@@ -247,6 +248,15 @@ class UFDRParser:
         evidence_items = []
         
         if isinstance(data, dict):
+            # Check for generic evidence_items key first (common in UFDR files)
+            if 'evidence_items' in data:
+                items = data['evidence_items']
+                if isinstance(items, list):
+                    for item in items:
+                        evidence_items.append(self._normalize_evidence_item(item))
+                return evidence_items
+            
+            # Check for specific evidence type keys
             if 'messages' in data:
                 evidence_items.extend(self._extract_messages(data['messages']))
             if 'calls' in data:
@@ -382,7 +392,7 @@ class UFDRParser:
                 'type': 'contact',
                 'source': 'Contacts',
                 'content': f"{contact.get('name', 'Unknown')} - {contact.get('phone', '')}",
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': timezone.now().isoformat(),
                 'metadata': contact,
                 'entities': [
                     {'type': 'Person', 'value': contact.get('name', '')},
@@ -441,6 +451,99 @@ class UFDRParser:
             }
             items.append(item)
         return items
+    
+    def _normalize_evidence_item(self, item: Dict) -> Dict[str, Any]:
+        """Normalize evidence_items structure from UFDR files"""
+        # Extract content - it can be a dict or string
+        content_data = item.get('content', {})
+        
+        # Build content string based on evidence type
+        evidence_type = item.get('evidence_type', 'log').lower()
+        content_str = ''
+        entities = []
+        latitude = None
+        longitude = None
+        
+        if isinstance(content_data, dict):
+            if evidence_type == 'contact':
+                # Contact format
+                name = content_data.get('name', '')
+                phone = content_data.get('phone_number', '')
+                email = content_data.get('email', '')
+                alias = content_data.get('alias', '')
+                content_str = f"{name}"
+                if alias:
+                    content_str += f" (Alias: {alias})"
+                if phone:
+                    content_str += f" - Phone: {phone}"
+                    entities.append({'type': 'Phone', 'value': phone})
+                if email:
+                    content_str += f" - Email: {email}"
+                    entities.append({'type': 'Email', 'value': email})
+                if name:
+                    entities.append({'type': 'Person', 'value': name})
+                    
+            elif evidence_type == 'message':
+                # Message format
+                from_user = content_data.get('from', '')
+                to_user = content_data.get('to', '')
+                message = content_data.get('message', '')
+                subject = content_data.get('subject', '')
+                
+                if subject:
+                    content_str = f"Subject: {subject}\n"
+                content_str += f"From: {from_user} To: {to_user}\n{message}"
+                
+                # Extract entities from message text
+                entities.extend(self._extract_entities(message))
+                
+            elif evidence_type == 'location':
+                # Location format
+                latitude = content_data.get('latitude')
+                longitude = content_data.get('longitude')
+                description = content_data.get('description', '')
+                content_str = description or f"Location: {latitude}, {longitude}"
+                if latitude and longitude:
+                    entities.append({'type': 'GPS', 'value': f'{latitude}, {longitude}'})
+                    
+            elif evidence_type == 'financial':
+                # Financial format
+                invoice_id = content_data.get('invoice_id', '')
+                amount = content_data.get('amount', 0)
+                currency = content_data.get('currency', 'USD')
+                notes = content_data.get('notes', '')
+                content_str = f"Invoice: {invoice_id} - Amount: {amount} {currency}"
+                if notes:
+                    content_str += f"\n{notes}"
+                entities.append({'type': 'Amount', 'value': f'{amount} {currency}'})
+                
+            elif evidence_type == 'file':
+                # File format
+                filename = content_data.get('filename', '')
+                file_type = content_data.get('file_type', '')
+                notes = content_data.get('notes', '')
+                content_str = f"File: {filename} ({file_type})"
+                if notes:
+                    content_str += f" - {notes}"
+            else:
+                # Generic format - convert dict to string
+                content_str = ', '.join([f"{k}: {v}" for k, v in content_data.items()])
+                entities.extend(self._extract_entities(content_str))
+        else:
+            # Content is already a string
+            content_str = str(content_data)
+            entities.extend(self._extract_entities(content_str))
+        
+        return {
+            'type': evidence_type,
+            'source': item.get('source_file', 'Unknown'),
+            'content': content_str,
+            'timestamp': self._parse_timestamp(item.get('timestamp', '')),
+            'latitude': latitude,
+            'longitude': longitude,
+            'metadata': item,
+            'entities': entities,
+        }
     
     def _normalize_item(self, item: Dict) -> Dict[str, Any]:
         """Normalize a generic item to evidence format"""
@@ -509,9 +612,9 @@ class UFDRParser:
         }
     
     def _parse_timestamp(self, timestamp_str: str) -> str:
-        """Parse various timestamp formats to ISO format"""
+        """Parse various timestamp formats to ISO format with timezone awareness"""
         if not timestamp_str:
-            return datetime.now().isoformat()
+            return timezone.now().isoformat()
         
         # Try common formats
         formats = [
@@ -526,12 +629,15 @@ class UFDRParser:
         for fmt in formats:
             try:
                 dt = datetime.strptime(timestamp_str, fmt)
+                # Make timezone aware
+                if timezone.is_naive(dt):
+                    dt = timezone.make_aware(dt)
                 return dt.isoformat()
             except:
                 continue
         
         # If all else fails, return current time
-        return datetime.now().isoformat()
+        return timezone.now().isoformat()
     
     def _determine_file_type(self, filename: str) -> str:
         """Determine file type from extension"""

@@ -201,19 +201,19 @@ const PublicLandingPage: React.FC = () => {
                     <div className="mt-16 flex flex-wrap items-center justify-center gap-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         <StatCard
                             icon={<ShieldCheckIcon className="h-6 w-6" />}
-                            value="500+"
+                            value="50+"
                             label="Law Enforcement Agencies"
                             gradient="from-cyan-400 to-blue-500"
                         />
                         <StatCard
                             icon={<ChartBarIcon className="h-6 w-6" />}
-                            value="10M+"
+                            value="10K+"
                             label="Cases Analyzed"
                             gradient="from-blue-400 to-cyan-500"
                         />
                         <StatCard
                             icon={<BoltIcon className="h-6 w-6" />}
-                            value="99.8%"
+                            value="99.79%"
                             label="Accuracy Rate"
                             gradient="from-cyan-500 to-blue-400"
                         />
@@ -411,7 +411,7 @@ const PublicLandingPage: React.FC = () => {
                                     JD
                                 </div>
                                 <div>
-                                    <div className="font-bold text-white">John Davis</div>
+                                    <div className="font-bold text-white">Suryansh Tripathi</div>
                                     <div className="text-sm text-cyan-400 font-semibold">Senior Investigator</div>
                                 </div>
                             </div>
@@ -431,7 +431,7 @@ const PublicLandingPage: React.FC = () => {
                                     SR
                                 </div>
                                 <div>
-                                    <div className="font-bold text-white">Sarah Roberts</div>
+                                    <div className="font-bold text-white">Sarah</div>
                                     <div className="text-sm text-cyan-400 font-semibold">Detective</div>
                                 </div>
                             </div>
@@ -451,7 +451,7 @@ const PublicLandingPage: React.FC = () => {
                                     MK
                                 </div>
                                 <div>
-                                    <div className="font-bold text-white">Michael Kumar</div>
+                                    <div className="font-bold text-white">Aurora de</div>
                                     <div className="text-sm text-cyan-400 font-semibold">Forensic Lead</div>
                                 </div>
                             </div>

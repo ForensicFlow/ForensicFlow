@@ -276,21 +276,17 @@ class CaseViewSet(viewsets.ModelViewSet):
                 from evidence.tasks import validate_and_process_file
                 try:
                     # Try async first (if Celery is running)
-                    validate_and_process_file.delay(case_file.id)
-                    print(f"✅ Queued for async processing: {original_filename}")
+                    task = validate_and_process_file.delay(case_file.id)
+                    case_file.processing_status = 'queued'
+                    case_file.save()
+                    print(f"✅ Queued for async processing: {original_filename} (Task ID: {task.id})")
                 except Exception as e:
-                    # If Celery not available, process synchronously
-                    print(f"⚠️  Celery not available, processing synchronously: {e}")
-                    try:
-                        # Call function directly (without .delay) for immediate processing
-                        result = validate_and_process_file(case_file.id)
-                        print(f"✅ Processed synchronously: {result}")
-                    except Exception as sync_error:
-                        print(f"❌ Sync processing failed: {sync_error}")
-                        import traceback
-                        traceback.print_exc()
-                        case_file.processing_status = f'failed: {str(sync_error)[:200]}'
-                        case_file.save()
+                    # If Celery not available, mark as queued for manual processing
+                    # Don't process synchronously as it blocks the upload response
+                    print(f"⚠️  Celery not available, marking for manual processing: {e}")
+                    case_file.processing_status = 'queued'
+                    case_file.save()
+                    print(f"⚠️  File queued for manual processing: {original_filename}")
                 
                 uploaded_files.append({
                     'id': case_file.id,
