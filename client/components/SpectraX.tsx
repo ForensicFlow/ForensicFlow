@@ -40,7 +40,7 @@ interface ChatAction {
   data?: any;
 }
 
-interface FlowBotProps {
+interface SpectraXProps {
   caseId: string;
   onShowTimeline?: () => void;
   onShowNetwork?: () => void;
@@ -49,7 +49,7 @@ interface FlowBotProps {
   onHypothesisModeChange?: (isActive: boolean) => void; // New: Notify parent of hypothesis mode state
 }
 
-const FlowBot: React.FC<FlowBotProps> = ({
+const SpectraX: React.FC<SpectraXProps> = ({
   caseId,
   onShowTimeline,
   onShowNetwork,
@@ -78,7 +78,7 @@ const FlowBot: React.FC<FlowBotProps> = ({
     {
       id: '1',
       type: 'bot',
-      content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case. I can help you analyze evidence using natural language queries.
+      content: `👋 Hi! I'm **SpectraX**, your AI forensic assistant for this case. I can help you analyze evidence using natural language queries.
 
 Try asking me:
 • "Show me all chats containing crypto addresses"
@@ -198,7 +198,7 @@ What would you like to investigate?`,
         {
           id: '1',
           type: 'bot',
-          content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case. I can help you analyze evidence using natural language queries.
+          content: `👋 Hi! I'm **SpectraX**, your AI forensic assistant for this case. I can help you analyze evidence using natural language queries.
 
 
 Try asking me:
@@ -244,7 +244,7 @@ What would you like to investigate?`,
         loadedMessages.unshift({
           id: '1',
           type: 'bot',
-          content: `👋 Hi! I'm **FlowBot**, your AI forensic assistant for this case.
+          content: `👋 Hi! I'm **SpectraX**, your AI forensic assistant for this case.
 
 **🤖 Enhanced AI Agent:** I can generate visualizations, maintain context, and use specialized tools to help with your investigation.`,
           timestamp: new Date(),
@@ -306,17 +306,17 @@ What would you like to investigate?`,
     setIsLoading(true);
 
     try {
-      console.log('FlowBot: Sending query:', inputValue, 'for case:', caseId, 'in demo mode:', isDemoMode);
+      console.log('SpectraX: Sending query:', inputValue, 'for case:', caseId, 'in demo mode:', isDemoMode);
 
       let response, evidence, actions, botResponse;
 
       if (isDemoMode) {
         // Use demo data instead of API calls
-        console.log('FlowBot: Using demo mode response');
+        console.log('SpectraX: Using demo mode response');
 
         // Get sample evidence for this case
         const sampleEvidence = getSampleCaseEvidence(caseId);
-        console.log('FlowBot: Found sample evidence:', sampleEvidence.length, 'items');
+        console.log('SpectraX: Found sample evidence:', sampleEvidence.length, 'items');
 
         // Filter evidence based on query (simple keyword matching for demo)
         const filteredEvidence = sampleEvidence.filter(item =>
@@ -326,7 +326,7 @@ What would you like to investigate?`,
           )
         );
 
-        console.log('FlowBot: Filtered evidence:', filteredEvidence.length, 'items');
+        console.log('SpectraX: Filtered evidence:', filteredEvidence.length, 'items');
 
         // Generate demo response
         response = {
@@ -343,20 +343,20 @@ What would you like to investigate?`,
         response = await aiApi.ask(inputValue, caseId, {
           conversation_history: conversationHistory
         });
-        console.log('FlowBot: AI API Response:', response);
-        console.log('FlowBot: Sent conversation history:', conversationHistory.length, 'exchanges');
+        console.log('SpectraX: AI API Response:', response);
+        console.log('SpectraX: Sent conversation history:', conversationHistory.length, 'exchanges');
 
         // Get evidence results
         evidence = response.evidence || [];
-        console.log('FlowBot: Evidence found:', evidence.length, 'items');
+        console.log('SpectraX: Evidence found:', evidence.length, 'items');
 
         // Generate action buttons based on query and results
         actions = generateActions(inputValue, evidence);
-        console.log('FlowBot: Generated actions:', actions);
+        console.log('SpectraX: Generated actions:', actions);
 
         // Format the AI response
         botResponse = formatAIResponse(response, evidence);
-        console.log('FlowBot: Formatted response:', botResponse);
+        console.log('SpectraX: Formatted response:', botResponse);
       }
 
       const botMessage: ChatMessage = {
@@ -389,7 +389,7 @@ What would you like to investigate?`,
         return newHistory.slice(-10);
       });
     } catch (error) {
-      console.error('FlowBot error:', error);
+      console.error('SpectraX error:', error);
 
       // Check for specific error types
       const errorText = error instanceof Error ? error.message : 'Unknown error';
@@ -945,7 +945,7 @@ ${fallbackSummary}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">FlowBot AI Assistant</h2>
+                <h2 className="text-lg font-semibold text-white">SpectraX AI Assistant</h2>
                 {isDemoMode && (
                   <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded-full">
                     DEMO MODE
@@ -1507,7 +1507,7 @@ ${fallbackSummary}
                 value={inputValue}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask FlowBot about this case... (e.g., 'Show me chats with...')"
+                placeholder="Ask SpectraX about this case... (e.g., 'Show me chats with...')"
                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 pr-12 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
                 rows={1}
                 disabled={isLoading}
@@ -1526,7 +1526,7 @@ ${fallbackSummary}
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <ExclamationTriangleIcon className="h-4 w-4" />
-            <span>FlowBot responses are AI-generated and should be verified by investigators</span>
+            <span>SpectraX responses are AI-generated and should be verified by investigators</span>
           </div>
           
           {conversationHistory.length > 0 && (
@@ -1543,4 +1543,4 @@ ${fallbackSummary}
   );
 };
 
-export default FlowBot;
+export default SpectraX;

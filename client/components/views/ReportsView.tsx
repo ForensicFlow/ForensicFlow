@@ -169,7 +169,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ caseId }) => {
                             Report Builder
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
-                            {pinnedItems.total_items} item{pinnedItems.total_items !== 1 ? 's' : ''} pinned • Build your case report by pinning insights from FlowBot
+                            {pinnedItems.total_items} item{pinnedItems.total_items !== 1 ? 's' : ''} pinned • Build your case report by pinning insights from SpectraX
                         </p>
                     </div>
                 </div>
@@ -255,7 +255,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ caseId }) => {
                             </svg>
                         </div>
                         <p className="font-semibold text-lg">No items pinned yet</p>
-                        <p className="text-sm mt-1">Go to **FlowBot** tab and click "Pin to Report" on AI responses to build your case report</p>
+                        <p className="text-sm mt-1">Go to **SpectraX** tab and click "Pin to Report" on AI responses to build your case report</p>
                     </div>
                 )}
             </div>

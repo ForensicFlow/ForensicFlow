@@ -8,7 +8,7 @@ import TimelineView from './TimelineView';
 import NetworkGraphView from './NetworkGraphView';
 import ReportsView from './ReportsView';
 import AuditLogView from './AuditLogView';
-import FlowBot from '../FlowBot';
+import SpectraX from '../SpectraX';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import { useDemo } from '@/contexts/DemoContext.tsx';
@@ -328,18 +328,18 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
               )}
 
               <div className="flex-1 overflow-hidden">
-          <FlowBot 
+          <SpectraX 
             caseId={caseId}
                 onShowTimeline={() => {
-                  console.log('FlowBot: Switching to Timeline tab');
+                  console.log('SpectraX: Switching to Timeline tab');
                   onTabChange?.(CaseTabView.TIMELINE);
                 }}
                 onShowNetwork={() => {
-                  console.log('FlowBot: Switching to Network tab');
+                  console.log('SpectraX: Switching to Network tab');
                   onTabChange?.(CaseTabView.NETWORK);
                 }}
                 onShowEvidence={(evidenceList) => {
-                  console.log('FlowBot: Switching to Evidence tab');
+                  console.log('SpectraX: Switching to Evidence tab');
                   onTabChange?.(CaseTabView.EVIDENCE);
                   // If specific evidence provided, select first one
                   if (evidenceList && evidenceList.length > 0) {
@@ -347,7 +347,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
                   }
                 }}
             onHighlightEvidence={(evidenceId) => {
-              console.log('FlowBot: Highlighting evidence:', evidenceId);
+              console.log('SpectraX: Highlighting evidence:', evidenceId);
               const evidenceItem = evidence.find(e => e.id === evidenceId || e.id === `EV${evidenceId}`);
               if (evidenceItem) {
                 setSelectedSnippet(evidenceItem);
