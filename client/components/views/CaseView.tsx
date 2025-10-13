@@ -81,13 +81,13 @@ const CaseView: React.FC<CaseViewProps> = ({ onCaseSelect }) => {
         result.sort((a, b) => {
             switch (sortBy) {
                 case 'newest':
-                    return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+                    return new Date(b.lastModified || b.last_modified || b.updated_at || b.created_at || 0).getTime() - new Date(a.lastModified || a.last_modified || a.updated_at || a.created_at || 0).getTime();
                 case 'oldest':
-                    return new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime();
+                    return new Date(a.lastModified || a.last_modified || a.updated_at || a.created_at || 0).getTime() - new Date(b.lastModified || b.last_modified || b.updated_at || b.created_at || 0).getTime();
                 case 'name':
                     return a.name.localeCompare(b.name);
                 case 'evidence':
-                    return safeNumber(b.evidenceCount, 0) - safeNumber(a.evidenceCount, 0);
+                    return safeNumber(b.evidenceCount || b.evidence_count, 0) - safeNumber(a.evidenceCount || a.evidence_count, 0);
                 default:
                     return 0;
             }
@@ -102,7 +102,7 @@ const CaseView: React.FC<CaseViewProps> = ({ onCaseSelect }) => {
         active: cases.filter(c => c.status === 'Active').length,
         archived: cases.filter(c => c.status === 'Archived').length,
         closed: cases.filter(c => c.status === 'Closed').length,
-        totalEvidence: cases.reduce((sum, c) => sum + safeNumber(c.evidenceCount, 0), 0),
+        totalEvidence: cases.reduce((sum, c) => sum + safeNumber(c.evidenceCount || c.evidence_count, 0), 0),
     }), [cases]);
 
     // Keyboard shortcuts
