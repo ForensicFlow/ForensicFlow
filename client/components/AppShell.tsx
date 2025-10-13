@@ -38,6 +38,8 @@ const AppShell: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [activeCaseTab, setActiveCaseTab] = useState<CaseTabView>(CaseTabView.EVIDENCE);
+  const [caseData, setCaseData] = useState<any>(null);
+  const [evidenceCount, setEvidenceCount] = useState<number>(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Determine active view from current path
@@ -113,20 +115,25 @@ const AppShell: React.FC = () => {
     navigate('/app');
   };
 
+  // Check if we should hide the top bar (only on FlowBot AI tab)
+  const shouldHideTopBar = activeView === AppView.CASE_DETAIL && activeCaseTab === CaseTabView.FLOWBOT;
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-900 text-gray-200">
-      {/* Top bar with integrated search */}
-      <TopBar 
-        onMenuClick={() => setIsNavOpen(!isNavOpen)}
-        activeView={activeView}
-        setActiveView={handleViewChange}
-      >
-        <SearchBar 
-          value={searchQuery} 
-          onChange={(e) => setSearchQuery(e.target.value)}
-          ref={searchInputRef}
-        />
-      </TopBar>
+      {/* Top bar with integrated search - hidden on FlowBot AI tab */}
+      {!shouldHideTopBar && (
+        <TopBar 
+          onMenuClick={() => setIsNavOpen(!isNavOpen)}
+          activeView={activeView}
+          setActiveView={handleViewChange}
+        >
+          <SearchBar 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)}
+            ref={searchInputRef}
+          />
+        </TopBar>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Navigation */}
@@ -140,6 +147,8 @@ const AppShell: React.FC = () => {
           activeCaseTab={activeCaseTab}
           setActiveCaseTab={setActiveCaseTab}
           selectedCaseId={selectedCaseId}
+          caseData={caseData}
+          evidenceCount={evidenceCount}
         />
 
         {/* Main Content Area */}
@@ -170,6 +179,8 @@ const AppShell: React.FC = () => {
                   onBack={handleBackFromCase}
                   activeTab={activeCaseTab}
                   onTabChange={setActiveCaseTab}
+                  onCaseDataChange={setCaseData}
+                  onEvidenceCountChange={setEvidenceCount}
                 />
               ) : (
                 <Navigate to="/app/cases" replace />

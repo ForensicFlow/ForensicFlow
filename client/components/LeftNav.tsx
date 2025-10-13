@@ -19,6 +19,8 @@ interface LeftNavProps {
   activeCaseTab?: CaseTabView;
   setActiveCaseTab?: (tab: CaseTabView) => void;
   selectedCaseId?: string | null;
+  caseData?: any;
+  evidenceCount?: number;
 }
 
 const LeftNav: React.FC<LeftNavProps> = ({ 
@@ -30,7 +32,9 @@ const LeftNav: React.FC<LeftNavProps> = ({
   onGoHome,
   activeCaseTab,
   setActiveCaseTab,
-  selectedCaseId
+  selectedCaseId,
+  caseData,
+  evidenceCount
 }) => {
   const { user } = useAuth();
   const { isDemoMode } = useDemo();
@@ -126,6 +130,88 @@ const LeftNav: React.FC<LeftNavProps> = ({
                 </button>
               </li>
             ))}
+            
+            {/* Divider */}
+            {!isCollapsed && <li className="my-2"><div className="border-t border-white/10"></div></li>}
+            
+            {/* Case Stats Section */}
+            {!isCollapsed && caseData && (
+              <>
+                <li className="my-2"><div className="border-t border-white/10"></div></li>
+                <li className="px-2 pb-2">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Case Overview</p>
+                </li>
+                <li className="space-y-2 px-2">
+                  {/* Evidence Items */}
+                  <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/20 rounded-lg p-3 border border-blue-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-500/20 rounded">
+                        <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-blue-400">Evidence Items</p>
+                        <p className="text-xl font-bold text-white">
+                          {evidenceCount !== undefined ? evidenceCount : (caseData.evidence_count || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Files Uploaded */}
+                  <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/20 rounded-lg p-3 border border-purple-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-purple-500/20 rounded">
+                        <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-purple-400">Files Uploaded</p>
+                        <p className="text-xl font-bold text-white">
+                          {caseData.files?.length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Investigators */}
+                  <div className="bg-gradient-to-br from-green-900/20 to-green-800/20 rounded-lg p-3 border border-green-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-green-500/20 rounded">
+                        <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-green-400">Investigators</p>
+                        <p className="text-xl font-bold text-white">
+                          {caseData.investigators?.length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Last Updated */}
+                  <div className="bg-gradient-to-br from-orange-900/20 to-orange-800/20 rounded-lg p-3 border border-orange-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-orange-500/20 rounded">
+                        <svg className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-orange-400">Last Updated</p>
+                        <p className="text-sm font-semibold text-white truncate">
+                          {new Date(caseData.updated_at || caseData.last_modified || caseData.lastModified || Date.now()).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </>
+            )}
             
             {/* Divider */}
             {!isCollapsed && <li className="my-2"><div className="border-t border-white/10"></div></li>}

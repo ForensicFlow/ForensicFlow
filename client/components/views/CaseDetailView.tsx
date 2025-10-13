@@ -18,6 +18,8 @@ interface CaseDetailViewProps {
   onBack: () => void;
   activeTab: CaseTabView;
   onTabChange?: (tab: CaseTabView) => void;
+  onCaseDataChange?: (caseData: any) => void;
+  onEvidenceCountChange?: (count: number) => void;
 }
 
 // Helper function to safely display numbers
@@ -26,7 +28,7 @@ const safeNumber = (value: any, fallback: number = 0): number => {
   return isNaN(num) ? fallback : num;
 };
 
-const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeTab, onTabChange }) => {
+const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeTab, onTabChange, onCaseDataChange, onEvidenceCountChange }) => {
   const [caseData, setCaseData] = useState<any>(null);
   const [evidence, setEvidence] = useState<EvidenceSnippet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,9 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
         if (sampleCase) {
           setCaseData(sampleCase);
           setEvidence(sampleEvidence);
+          // Pass data to parent for sidebar
+          onCaseDataChange?.(sampleCase);
+          onEvidenceCountChange?.(sampleEvidence.length);
         } else {
           console.error('Sample case not found:', caseId);
         }
@@ -60,13 +65,16 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
         ]);
         setCaseData(caseInfo);
         setEvidence(evidenceData);
+        // Pass data to parent for sidebar
+        onCaseDataChange?.(caseInfo);
+        onEvidenceCountChange?.(evidenceData.length);
       }
     } catch (error) {
       console.error('Error loading case:', error);
     } finally {
       setLoading(false);
     }
-  }, [caseId, isDemoMode, getSampleCase, getSampleCaseEvidence]);
+  }, [caseId, isDemoMode, getSampleCase, getSampleCaseEvidence, onCaseDataChange, onEvidenceCountChange]);
 
   useEffect(() => {
     loadCaseData();
@@ -208,7 +216,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
           <div className={`flex gap-4 transition-all duration-500 ${
             hypothesisModeActive 
               ? 'h-screen fixed inset-0 z-50 bg-slate-900' 
-              : 'h-[calc(100vh-280px)] min-h-[500px]'
+              : 'h-full'
           }`}>
             {/* Left Panel - Evidence Sidebar */}
             {showEvidenceSidebar && (
@@ -390,13 +398,13 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
 
   return (
     <div className="flex flex-col h-full overflow-hidden" role="main" aria-label="Case Detail View">
-      {/* Compact Header */}
+      {/* Compact Header - Hidden on FlowBot AI tab */}
       <div className={`flex-1 overflow-y-auto transition-all duration-500 ${
-        hypothesisModeActive && activeTab === CaseTabView.FLOWBOT 
+        activeTab === CaseTabView.FLOWBOT 
           ? 'hidden' 
           : ''
       }`}>
-        <div className="p-6 lg:p-8">
+        <div className="p-4 lg:p-6">
           {/* Breadcrumb */}
           <div className="mb-3">
         <button
@@ -411,8 +419,8 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
           </div>
 
           {/* Compact Header */}
-          <div className="mb-4">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4">
+          <div className="mb-3">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-3">
               <div className="flex-1">
                 <div className="flex items-start gap-3 mb-2">
                   <div className="flex-1">
@@ -447,11 +455,6 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
                       {caseData.category}
                     </span>
                   )}
-                  {caseData.created_at && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-slate-700/50 text-slate-300 border border-slate-600">
-                      Created {new Date(caseData.created_at).toLocaleDateString()}
-              </span>
-                  )}
             </div>
           </div>
 
@@ -478,72 +481,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
         </div>
       </div>
 
-            {/* Compact Stats Overview with safe number rendering */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/20 rounded-lg p-3 border border-blue-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-500/20 rounded">
-                    <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-blue-400">Evidence Items</p>
-                    <p className="text-xl font-bold text-white">
-                      {safeNumber(caseData.evidence_count, evidence.length)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/20 rounded-lg p-3 border border-purple-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-purple-500/20 rounded">
-                    <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-purple-400">Files Uploaded</p>
-                    <p className="text-xl font-bold text-white">
-                      {safeNumber(caseData.files?.length, 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-900/20 to-green-800/20 rounded-lg p-3 border border-green-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-green-500/20 rounded">
-                    <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-green-400">Investigators</p>
-                    <p className="text-xl font-bold text-white">
-                      {safeNumber(caseData.investigators?.length, 0)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-orange-900/20 to-orange-800/20 rounded-lg p-3 border border-orange-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-orange-500/20 rounded">
-                    <svg className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-orange-400">Last Updated</p>
-                    <p className="text-sm font-semibold text-white truncate">
-                      {new Date(caseData.updated_at || caseData.last_modified || caseData.lastModified || Date.now()).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-        </div>
+            {/* Stats moved to left sidebar - removed from here */}
       </div>
 
           {/* Tab Content */}
@@ -552,6 +490,13 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseId, onBack, activeT
           </div>
         </div>
       </div>
+
+      {/* FlowBot AI Tab - Rendered outside header for full height */}
+      {activeTab === CaseTabView.FLOWBOT && !hypothesisModeActive && (
+        <div className="flex-1 overflow-hidden">
+          {renderTabContent()}
+        </div>
+      )}
 
       {/* Fullscreen Hypothesis Mode View */}
       {hypothesisModeActive && activeTab === CaseTabView.FLOWBOT && (
