@@ -245,6 +245,8 @@ if not DEBUG:
 
 # Celery Configuration
 REDIS_URL = os.getenv('REDIS_URL', 'redis://red-d3miq73ipnbc73aqfto0:6379')
+# Run Celery tasks immediately (no Redis or worker required)
+CELERY_TASK_ALWAYS_EAGER = os.getenv("RENDER", "false") == "true"
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
