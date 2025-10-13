@@ -244,7 +244,7 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 # Celery Configuration
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://red-d3miq73ipnbc73aqfto0:6379')
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
