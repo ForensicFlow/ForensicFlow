@@ -74,7 +74,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ caseInfo, onClick }) => {
             </p>
             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-sm">
                 <div className="text-slate-300">
-                    <span className="font-semibold text-white">{safeNumber(caseInfo.evidenceCount, 0)}</span> evidence items
+                    <span className="font-semibold text-white">{safeNumber(caseInfo.evidenceCount || caseInfo.evidence_count, 0)}</span> evidence items
                 </div>
                 <div className="flex items-center text-slate-300">
                     <UserGroupIcon className="h-5 w-5 mr-2" />

@@ -49,7 +49,8 @@ export interface Case {
   last_modified?: string; // Backend snake_case variant
   updated_at?: string; // Alternative backend field
   created_at?: string;
-  evidenceCount: number;
+  evidenceCount?: number; // Frontend camelCase
+  evidence_count?: number; // Backend snake_case
   investigators: string[] | Investigator[];
   description?: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
