@@ -1,5 +1,5 @@
 """
-Manual test script for FlowBot Agent Framework
+Manual test script for SpectraX Agent Framework
 Run this to test the agent's tool-use capabilities
 
 Usage:
@@ -211,7 +211,7 @@ def test_agent_with_real_data():
 def main():
     """Run all tests"""
     print("\n" + "="*60)
-    print("🧪 FLOWBOT AGENT FRAMEWORK TEST SUITE")
+    print("🧪 SPECTRAX AGENT FRAMEWORK TEST SUITE")
     print("="*60)
     
     try:

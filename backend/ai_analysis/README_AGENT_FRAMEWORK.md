@@ -1,8 +1,8 @@
-# FlowBot AI Agent Framework Documentation
+# SpectraX AI Agent Framework Documentation
 
 ## Overview
 
-FlowBot has been upgraded from a simple Q&A chatbot to a sophisticated AI agent with:
+SpectraX has been upgraded from a simple Q&A chatbot to a sophisticated AI agent with:
 1. **Enhanced conversation memory** - Tracks context across 10+ exchanges
 2. **Tool-use capabilities** - Can generate graphs, timelines, and perform analyses
 3. **Reliable structured outputs** - Uses Gemini Function Calling API
@@ -164,7 +164,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 ## Frontend Integration
 
-**Location:** `client/components/FlowBot.tsx`
+**Location:** `client/components/SpectraX.tsx`
 
 **Handling Agent Responses:**
 

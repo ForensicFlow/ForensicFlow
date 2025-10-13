@@ -117,7 +117,7 @@ class ReportItem(models.Model):
 
 class ChatSession(models.Model):
     """
-    Stores FlowBot chat sessions for a case
+    Stores SpectraX chat sessions for a case
     Each session represents a conversation thread
     """
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='chat_sessions')

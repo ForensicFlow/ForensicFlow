@@ -1,6 +1,6 @@
 """
 Function schemas for Gemini Function Calling API
-Defines all tools available to FlowBot AI agent
+Defines all tools available to SpectraX AI agent
 """
 from typing import List
 

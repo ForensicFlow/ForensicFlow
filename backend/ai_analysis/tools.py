@@ -1,5 +1,5 @@
 """
-Tool implementations for FlowBot AI agent - IMPROVED VERSION
+Tool implementations for SpectraX AI agent - IMPROVED VERSION
 Each tool is a callable that takes parameters and returns rich, actionable results
 """
 from typing import Dict, Any, List, Optional

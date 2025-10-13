@@ -14,7 +14,7 @@ from collections import deque
 
 class ConversationManager:
     """
-    Manages conversation context and state for FlowBot
+    Manages conversation context and state for SpectraX
     Tracks conversation history, entities, and provides context summarization
     """
     
@@ -1002,7 +1002,7 @@ Here are some ways to improve your search:
 
 ---
 
-> **💡 Tip:** FlowBot works best with natural language queries like "Show me financial transactions" or "Find communications with foreign numbers"
+> **💡 Tip:** SpectraX works best with natural language queries like "Show me financial transactions" or "Find communications with foreign numbers"
 
 Try one of these example queries:
 - "Show me all messages"

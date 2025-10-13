@@ -319,7 +319,7 @@ For complete API documentation, visit the backend README or access `/api/docs/` 
 
 ## 🎨 Features Showcase
 
-### FlowBot - AI Assistant
+### SpectraX - AI Assistant
 - **Chat Interface**: Natural conversation with your forensic data
 - **Hypothesis Mode**: Generate and test investigative theories
 - **Context-Aware**: Understands case context and previous queries

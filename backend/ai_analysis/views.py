@@ -1068,7 +1068,7 @@ class ReportItemViewSet(viewsets.ModelViewSet):
 
 class ChatSessionViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing FlowBot chat sessions with user-specific access control
+    ViewSet for managing SpectraX chat sessions with user-specific access control
     """
     serializer_class = ChatSessionSerializer
     
