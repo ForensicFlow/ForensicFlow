@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
 // Case-specific tab items
 export const CASE_TAB_ITEMS = [
   { view: 'evidence', label: 'Evidence', icon: <FolderIcon className="h-5 w-5" /> },
-  { view: 'flowbot', label: 'FlowBot AI', icon: <SparklesIcon className="h-5 w-5" /> },
+  { view: 'flowbot', label: 'SpectraX AI', icon: <SparklesIcon className="h-5 w-5" /> },
   { view: 'timeline', label: 'Timeline', icon: <ClockIcon className="h-5 w-5" /> },
   { view: 'network', label: 'Network', icon: <ShareIcon className="h-5 w-5" /> },
   { view: 'reports', label: 'Reports', icon: <DocumentReportIcon className="h-5 w-5" /> },
