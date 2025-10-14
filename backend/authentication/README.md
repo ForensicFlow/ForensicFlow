@@ -76,7 +76,7 @@ POST /api/auth/register/
 **Response** (201 Created):
 ```json
 {
-  "message": "Registration successful. Your account is pending approval by an administrator.",
+  "message": "Registration successful. You can now login with your credentials.",
   "user": {
     "id": 1,
     "username": "officer123",
@@ -84,15 +84,16 @@ POST /api/auth/register/
     "first_name": "John",
     "last_name": "Doe",
     "role": "INVESTIGATOR",
-    "is_approved": false
+    "is_approved": true
   }
 }
 ```
 
 **Notes**:
 - New users are created with `INVESTIGATOR` role by default
-- Account requires administrator approval before login
+- Users can login immediately after registration
 - Password must meet Django's validation requirements
+- Administrators can still manually approve/reject users if needed
 
 ---
 
@@ -133,7 +134,7 @@ POST /api/auth/login/
 
 **Error Responses**:
 - `401 Unauthorized`: Invalid credentials
-- `403 Forbidden`: Account not approved or disabled
+- `403 Forbidden`: Account disabled
 
 **Notes**:
 - Returns JWT access token (1 hour validity) and refresh token (7 days validity)

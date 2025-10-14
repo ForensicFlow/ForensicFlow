@@ -62,7 +62,7 @@ class User(AbstractUser):
     
     # Account status
     is_approved = models.BooleanField(
-        default=False,
+        default=True,
         help_text='Account approved by administrator'
     )
     

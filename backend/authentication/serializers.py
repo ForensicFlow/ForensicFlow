@@ -62,11 +62,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
         
         # Create user with INVESTIGATOR role by default
-        # Administrator will approve and can change role
+        # User is automatically approved and can login immediately
         user = User.objects.create_user(
             password=password,
             role=User.INVESTIGATOR,
-            is_approved=False,  # Requires admin approval
+            is_approved=True,  # Auto-approved on registration
             **validated_data
         )
         
@@ -108,11 +108,8 @@ class UserLoginSerializer(serializers.Serializer):
                     code='authentication'
                 )
             
-            if not user.is_approved and not user.is_superuser:
-                raise serializers.ValidationError(
-                    "Your account is pending approval by an administrator.",
-                    code='not_approved'
-                )
+            # Approval check removed - users can login immediately after registration
+            # Admin can still disable accounts via is_active flag if needed
             
         else:
             raise serializers.ValidationError(

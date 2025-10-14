@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../../contexts/DemoContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
     SearchIcon, 
     ShieldCheckIcon, 
@@ -77,6 +78,7 @@ const UseCaseCard: React.FC<{
 const PublicLandingPage: React.FC = () => {
     const navigate = useNavigate();
     const { enterDemoMode } = useDemo();
+    const { isAuthenticated } = useAuth();
     const [activeTab, setActiveTab] = useState<'features' | 'demo' | 'pricing'>('features');
 
     // Navigation handlers
@@ -124,21 +126,23 @@ const PublicLandingPage: React.FC = () => {
                         </a>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                        <button 
-                            onClick={handleLogin}
-                            className="rounded-lg bg-gray-800/80 border border-cyan-500/30 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700/80 hover:border-cyan-400/50 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-                        >
-                            Login
-                        </button>
-                        <button 
-                            onClick={handleRegister}
-                            className="group relative rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-bold text-white transition-all overflow-hidden hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
-                        >
-                            <span className="relative z-10">Sign Up</span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        </button>
-                    </div>
+                    {!isAuthenticated && (
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={handleLogin}
+                                className="rounded-lg bg-gray-800/80 border border-cyan-500/30 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700/80 hover:border-cyan-400/50 transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                            >
+                                Login
+                            </button>
+                            <button 
+                                onClick={handleRegister}
+                                className="group relative rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-bold text-white transition-all overflow-hidden hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
+                            >
+                                <span className="relative z-10">Sign Up</span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            </button>
+                        </div>
+                    )}
                 </nav>
             </header>
 
