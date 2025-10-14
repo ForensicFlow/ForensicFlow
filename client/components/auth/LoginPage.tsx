@@ -29,6 +29,19 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
+        {/* Back to Home Button */}
+        <div className="flex justify-start">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors group"
+          >
+            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span className="font-medium">Back to Home</span>
+          </button>
+        </div>
+        
         {/* Logo and Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
