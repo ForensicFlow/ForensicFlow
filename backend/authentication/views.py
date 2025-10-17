@@ -50,25 +50,43 @@ def send_email_async(subject, message, from_email, recipient_list):
     Includes timeout to prevent hanging on slow SMTP connections.
     """
     def _send_with_timeout():
+        import socket
+        import traceback
+        
         try:
-            import socket
             # Set a socket timeout for SMTP connections (30 seconds)
             default_timeout = socket.getdefaulttimeout()
             socket.setdefaulttimeout(30)
             
-            send_mail(
+            # CRITICAL FIX: Set fail_silently=False to catch SMTP errors
+            result = send_mail(
                 subject=subject,
                 message=message,
                 from_email=from_email,
                 recipient_list=recipient_list,
-                fail_silently=True,
+                fail_silently=False,  # Changed from True to False
             )
-            print(f"✅ Email sent successfully to {recipient_list}")
+            
+            if result == 1:
+                print(f"✅ Email sent successfully to {recipient_list}")
+            else:
+                print(f"⚠️ Email send returned unexpected result: {result} for {recipient_list}")
             
             # Restore default timeout
             socket.setdefaulttimeout(default_timeout)
+            
         except Exception as e:
-            print(f"⚠️ Failed to send email: {e}")
+            print(f"❌ CRITICAL: Failed to send email to {recipient_list}")
+            print(f"   Error type: {type(e).__name__}")
+            print(f"   Error message: {str(e)}")
+            print(f"   Full traceback:")
+            traceback.print_exc()
+            
+            # Restore default timeout even on error
+            try:
+                socket.setdefaulttimeout(default_timeout)
+            except:
+                pass
     
     # Start email sending in background thread
     email_thread = threading.Thread(target=_send_with_timeout, daemon=True)
