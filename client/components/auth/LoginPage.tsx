@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import Logo from '@/components/Logo';
+import AuthErrorAlert from '@/components/auth/AuthErrorAlert';
+import { parseAuthError } from '@/utils/errorParser';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,16 +13,20 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorAlert, setErrorAlert] = useState<{ message: string; type: any } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorAlert(null);
 
     try {
       await login(username, password);
       success('Login successful! Welcome back.');
     } catch (err: any) {
-      showError(err.message || 'Login failed. Please check your credentials.');
+      const parsedError = parseAuthError(err);
+      setErrorAlert(parsedError);
+      // Only show the AuthErrorAlert component, no toast notification
     } finally {
       setIsLoading(false);
     }
@@ -28,6 +34,17 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
+      {/* Error Alert - Fixed Top Right */}
+      {errorAlert && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <AuthErrorAlert
+            message={errorAlert.message}
+            type={errorAlert.type}
+            onClose={() => setErrorAlert(null)}
+          />
+        </div>
+      )}
+
       <div className="max-w-md w-full space-y-8">
         {/* Back to Home Button */}
         <div className="flex justify-start">
@@ -141,7 +158,7 @@ const LoginPage: React.FC = () => {
             <div>
               <h3 className="text-blue-300 font-semibold text-sm mb-1">New User?</h3>
               <p className="text-blue-200 text-xs">
-                Your account will need approval from an administrator before you can access the system.
+                Login with your credentials and get access to your account.
               </p>
             </div>
           </div>

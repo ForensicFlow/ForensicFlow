@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useToast } from '@/contexts/ToastContext.tsx';
 import Logo from '@/components/Logo';
+import AuthErrorAlert from '@/components/auth/AuthErrorAlert';
+import { parseAuthError } from '@/utils/errorParser';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ const RegisterPage: React.FC = () => {
   });
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorAlert, setErrorAlert] = useState<{ message: string; type: any } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -32,10 +35,14 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorAlert(null);
 
     // Validate passwords match
     if (formData.password !== formData.password_confirm) {
-      showError('Passwords do not match');
+      setErrorAlert({
+        message: 'Passwords do not match. Please ensure both password fields are identical.',
+        type: 'error'
+      });
       setIsLoading(false);
       return;
     }
@@ -57,7 +64,9 @@ const RegisterPage: React.FC = () => {
         phone_number: '',
       });
     } catch (err: any) {
-      showError(err.message || 'Registration failed. Please try again.');
+      const parsedError = parseAuthError(err);
+      setErrorAlert(parsedError);
+      // Only show the AuthErrorAlert component, no toast notification
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +111,17 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      {/* Error Alert - Fixed Top Right */}
+      {errorAlert && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <AuthErrorAlert
+            message={errorAlert.message}
+            type={errorAlert.type}
+            onClose={() => setErrorAlert(null)}
+          />
+        </div>
+      )}
+
       <div className="max-w-2xl w-full space-y-8">
         {/* Back to Home Button */}
         <div className="flex justify-start">

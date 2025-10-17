@@ -48,32 +48,53 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
   const getColors = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-500/10 border-green-500/30 text-green-400';
+        return 'bg-green-500/15 border-green-500/40 text-green-300';
       case 'error':
-        return 'bg-red-500/10 border-red-500/30 text-red-400';
+        return 'bg-red-500/15 border-red-500/40 text-red-300';
       case 'warning':
-        return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400';
+        return 'bg-yellow-500/15 border-yellow-500/40 text-yellow-300';
       case 'info':
-        return 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+        return 'bg-blue-500/15 border-blue-500/40 text-blue-300';
+    }
+  };
+
+  const getIconColor = () => {
+    switch (toast.type) {
+      case 'success':
+        return 'text-green-400';
+      case 'error':
+        return 'text-red-400';
+      case 'warning':
+        return 'text-yellow-400';
+      case 'info':
+        return 'text-blue-400';
     }
   };
 
   return (
     <div
       className={`
-        flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm
+        flex items-start gap-3 p-4 rounded-xl border-2 backdrop-blur-md
         ${getColors()}
         ${isExiting ? 'animate-slideOut' : 'animate-slideIn'}
-        shadow-lg min-w-[300px] max-w-md
+        shadow-xl min-w-[320px] max-w-md
+        transition-all duration-300 hover:scale-[1.02]
       `}
+      role="alert"
+      aria-live="polite"
     >
-      <div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
-      <div className="flex-1 text-sm font-medium">{toast.message}</div>
+      <div className={`flex-shrink-0 mt-0.5 ${getIconColor()}`}>
+        {getIcon()}
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-medium leading-relaxed">{toast.message}</p>
+      </div>
       <button
         onClick={handleRemove}
-        className="flex-shrink-0 text-current hover:opacity-70 transition"
+        className="flex-shrink-0 text-current hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/20 rounded"
+        aria-label="Close notification"
       >
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
         </svg>
       </button>
