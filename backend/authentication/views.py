@@ -98,11 +98,11 @@ class UserRegistrationView(generics.CreateAPIView):
         
         # Send welcome email asynchronously (non-blocking)
         send_email_async(
-            subject='Welcome to ForensicFlow - Account Registration Received',
+            subject='Welcome to ForensicFlow - Registration Successful',
             message=f'''
 Hello {user.first_name} {user.last_name},
 
-Thank you for registering with ForensicFlow!
+Welcome to ForensicFlow! Your account has been successfully created.
 
 Your account details:
 Username: {user.username}
@@ -111,7 +111,7 @@ Employee ID: {user.employee_id}
 Department: {user.department}
 Role: {user.get_role_display()}
 
-Your account is currently pending approval by an administrator. You will receive another email once your account has been approved.
+You can now login to the system using your username and password.
 
 If you have any questions, please contact your system administrator.
 
@@ -123,7 +123,7 @@ ForensicFlow Team
         )
         
         return Response({
-            'message': 'Registration successful. Your account is pending approval by an administrator.',
+            'message': 'Registration successful. You can now login with your credentials.',
             'user': {
                 'id': user.id,
                 'username': user.username,
